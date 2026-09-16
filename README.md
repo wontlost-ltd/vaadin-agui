@@ -178,6 +178,20 @@ parallel lane that streams a second chat at the same time, an English/中文 tog
 `flat` variants, and a server-side event log that proves Flow hears about each run once.
 [e2e/README.md](e2e/README.md) describes the Playwright suite that locks all of this down.
 
+## Pro
+
+The add-on is and stays Apache 2.0. For teams taking an assistant into production, WontLost offers
+**AG-UI for Vaadin Pro**, a set of commercial modules on top of it:
+
+- **Conversations**: persistent, tenant-scoped conversation store (JDBC: PostgreSQL, MySQL, H2),
+  a sidebar component with search, rename and delete, and a binder that saves every run and
+  restores on selection.
+- **Audit**: every message, run, tool call, error and feedback appended to an audit table with
+  tenant and actor, queryable by thread, kind and time.
+- Priority support and a compatibility promise for each Vaadin 25.x minor.
+
+Details and pricing: https://wontlost.com/agui-vaadin-pro
+
 ## Licence
 
 Apache 2.0.

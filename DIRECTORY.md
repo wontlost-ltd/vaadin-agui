@@ -52,3 +52,6 @@ resumes once you hand back the result.
 
 Vaadin 25.2+, Java 21+, Jackson 3. Spring Boot 4 and Spring AI 2 are optional dependencies.
 Apache 2.0.
+
+Commercial add-ons for production teams (persistent conversations, audit trail, priority support)
+are available separately as AG-UI for Vaadin Pro: https://wontlost.com/agui-vaadin-pro
