@@ -176,8 +176,9 @@ exact code path a real model would.
 Also on the page: a conversation list (in-memory, per UI; it only shows that `RunFinishedEvent` and
 `setMessages` are enough to restore a thread, the persistent, tenant-scoped version with a sidebar
 component is in Pro), a
-parallel lane that streams a second chat at the same time, an English/中文 toggle, `compact` and
-`flat` variants, and a server-side event log that proves Flow hears about each run once.
+parallel lane that streams a second chat at the same time, an English/中文 toggle, a light/dark
+toggle (follows the system preference by default, remembered in a cookie), `compact` and `flat`
+variants, and a server-side event log that proves Flow hears about each run once.
 [e2e/README.md](e2e/README.md) describes the Playwright suite that locks all of this down.
 
 ## Pro
