@@ -24,9 +24,18 @@
 - Example `examples/agui-starter` ("Atlas Order Desk"): six switchable agents on mock data — Spring AI
   order desk with `@Tool` methods, human-in-the-loop approvals with frontend tools and a Flow
   `ConfirmDialog`, analyst driving KPI cards and a plan through `STATE_SNAPSHOT`/`STATE_DELTA`,
-  long-Markdown writer, chaos agent with `RUN_ERROR`, and an external runtime that writes SSE
+  long-Markdown writer, warehouse agent over a mock API with on-demand `RUN_ERROR`, and an external runtime that writes SSE
   frames by hand. Conversation sidebar with `setMessages` restore, parallel lane, English/中文,
   `compact`/`flat` variants, server-side event log, reset button. Scripted `ChatModel` replays
   Spring AI's internal tool loop so no API key is needed.
 - E2E: 21 Playwright cases × Chromium + Firefox covering streaming, tool calls (backend and
   frontend), shared state, lifecycle, conversations, protocol compatibility and error recovery.
+- Component design pass: assistant messages use a left rule instead of a grey bubble, user messages
+  are compact pills, tool calls are instrument strips with an LED status dot and collapsed
+  arguments/result, thinking blocks shimmer while streaming, the composer is a rounded field with
+  an icon send button and a pulsing stop button, an amber streaming caret, refined Markdown
+  typography (tables, code, quotes). All colours go through `--agui-*` custom properties with Lumo
+  fallbacks so Aura works unchanged.
+- Example redesigned as a dark "control room": Lumo dark with an amber/green signal palette,
+  IBM Plex Sans/Mono, LED run indicator, instrument-style KPI tiles, plan checklist, status dots in
+  the grid, terminal-style event log, staggered column reveal. All styling lives in `atlas.css`.

@@ -49,25 +49,39 @@ const STICK_THRESHOLD_PX = 24;
 @customElement('agui-chat')
 export class AgUiChatElement extends LitElement {
   static override styles = css`
+    /*
+     * 设计基调：克制的仪表盘。助手不用灰气泡而用左侧细线，用户消息是紧凑胶囊；
+     * 工具调用是带 LED 的仪表条；所有颜色经 --agui-* 暴露，回退到 Lumo 变量，
+     * Aura 下同样能落到合理值。
+     */
     :host {
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
       min-height: 0;
       height: 100%;
-      font-family: var(--lumo-font-family, system-ui, sans-serif);
-      font-size: var(--lumo-font-size-m, 1rem);
-      line-height: var(--lumo-line-height-m, 1.5);
-      color: var(--lumo-body-text-color, inherit);
+      font-family: var(--agui-font-family, var(--lumo-font-family, system-ui, sans-serif));
+      font-size: var(--agui-font-size, var(--lumo-font-size-m, 1rem));
+      line-height: 1.55;
+      color: var(--agui-text-color, var(--lumo-body-text-color, #1f2933));
+
       --_gap: var(--agui-gap, var(--lumo-space-m, 1rem));
-      --_radius: var(--agui-bubble-radius, var(--lumo-border-radius-l, 0.75em));
-      --_user-bg: var(--agui-user-bubble-background, var(--lumo-primary-color-10pct, rgba(0, 0, 0, 0.06)));
-      --_assistant-bg: var(--agui-assistant-bubble-background, var(--lumo-contrast-5pct, rgba(0, 0, 0, 0.04)));
+      --_radius: var(--agui-bubble-radius, 14px);
+      --_mono: var(--agui-font-family-mono, var(--lumo-font-family-mono, ui-monospace, "SF Mono", Menlo, monospace));
+      --_accent: var(--agui-accent-color, var(--lumo-primary-color, #2563eb));
+      --_accent-soft: var(--agui-accent-soft, var(--lumo-primary-color-10pct, rgba(37, 99, 235, 0.1)));
       --_muted: var(--agui-muted-color, var(--lumo-secondary-text-color, #6b7280));
-      --_border: var(--agui-border-color, var(--lumo-contrast-10pct, rgba(0, 0, 0, 0.1)));
-      --_code-bg: var(--agui-code-background, var(--lumo-contrast-10pct, rgba(0, 0, 0, 0.08)));
-      --_error: var(--agui-error-color, var(--lumo-error-text-color, #b91c1c));
-      --_primary: var(--agui-primary-color, var(--lumo-primary-color, #2563eb));
+      --_faint: var(--agui-faint-color, var(--lumo-tertiary-text-color, #9aa3ad));
+      --_hairline: var(--agui-hairline, var(--lumo-contrast-10pct, rgba(0, 0, 0, 0.1)));
+      --_surface: var(--agui-surface, var(--lumo-base-color, #fff));
+      --_surface-2: var(--agui-surface-2, var(--lumo-contrast-5pct, rgba(0, 0, 0, 0.04)));
+      --_code-bg: var(--agui-code-background, var(--lumo-contrast-5pct, rgba(0, 0, 0, 0.05)));
+      --_user-bg: var(--agui-user-bubble-background, var(--_accent-soft));
+      --_assistant-rule: var(--agui-assistant-rule, var(--_accent));
+      --_ok: var(--agui-success-color, var(--lumo-success-color, #16a34a));
+      --_warn: var(--agui-pending-color, #e0a626);
+      --_error: var(--agui-error-color, var(--lumo-error-text-color, #dc2626));
+      --_focus: var(--agui-focus-ring, var(--_accent));
     }
     :host([hidden]) {
       display: none;
@@ -78,228 +92,491 @@ export class AgUiChatElement extends LitElement {
     }
     :host([theme~='flat']) {
       --_user-bg: transparent;
-      --_assistant-bg: transparent;
+      --_assistant-rule: transparent;
     }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+    button {
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+    }
+    button:focus-visible,
+    textarea:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--_focus);
+      outline-offset: 2px;
+    }
+
+    /* ---- 消息流 ------------------------------------------------------ */
     .messages {
       flex: 1 1 auto;
       min-height: 0;
       overflow-y: auto;
-      padding: var(--_gap);
+      padding: var(--_gap) calc(var(--_gap) * 1.25);
       display: flex;
       flex-direction: column;
-      gap: var(--_gap);
+      gap: calc(var(--_gap) * 1.1);
       scroll-behavior: smooth;
+      overscroll-behavior: contain;
     }
     .message {
       display: flex;
       flex-direction: column;
-      gap: 0.25em;
-      max-width: min(100%, 48rem);
+      gap: 0.35em;
+      max-width: min(100%, 52rem);
+      animation: agui-rise 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes agui-rise {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .message,
+      .streaming::after,
+      .led[data-status='streaming'],
+      details.thinking[open] .body::after {
+        animation: none;
+      }
     }
     .message[data-role='user'] {
       align-self: flex-end;
       align-items: flex-end;
-    }
-    .message[data-role='assistant'] {
-      align-self: flex-start;
+      max-width: min(85%, 40rem);
     }
     .author {
-      font-size: var(--lumo-font-size-xs, 0.75rem);
-      color: var(--_muted);
-      padding: 0 0.25em;
+      font-family: var(--_mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--_faint);
+      padding: 0 0.15em;
     }
     .bubble {
-      padding: 0.6em 0.9em;
-      border-radius: var(--_radius);
-      background: var(--_assistant-bg);
+      position: relative;
+      padding: 0.15em 0 0.15em 1em;
+      border-left: 2px solid var(--_assistant-rule);
       overflow-wrap: anywhere;
     }
     .message[data-role='user'] .bubble {
+      border-left: 0;
       background: var(--_user-bg);
+      border-radius: var(--_radius) var(--_radius) 4px var(--_radius);
+      padding: 0.55em 0.95em;
       white-space: pre-wrap;
     }
-    :host([theme~='flat']) .bubble {
-      padding: 0.25em 0;
+    :host([theme~='flat']) .message[data-role='user'] .bubble {
+      padding: 0.15em 0;
     }
-    .bubble :is(p, ul, ol, pre, blockquote, table) {
-      margin: 0.4em 0;
+
+    /* Markdown 排版 */
+    .bubble :is(p, ul, ol, pre, blockquote, table, h1, h2, h3, h4) {
+      margin: 0.45em 0;
     }
-    .bubble :is(p, ul, ol, pre, blockquote, table):first-child {
+    .bubble > :first-child {
       margin-top: 0;
     }
-    .bubble :is(p, ul, ol, pre, blockquote, table):last-child {
+    .bubble > :last-child {
       margin-bottom: 0;
+    }
+    .bubble :is(h1, h2, h3, h4) {
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+    .bubble h1 {
+      font-size: 1.35em;
+    }
+    .bubble h2 {
+      font-size: 1.2em;
+    }
+    .bubble h3 {
+      font-size: 1.05em;
+    }
+    .bubble ul,
+    .bubble ol {
+      padding-left: 1.4em;
+    }
+    .bubble li + li {
+      margin-top: 0.2em;
+    }
+    .bubble blockquote {
+      margin-left: 0;
+      padding: 0.2em 0 0.2em 0.9em;
+      border-left: 2px solid var(--_hairline);
+      color: var(--_muted);
     }
     .bubble pre {
       background: var(--_code-bg);
-      border-radius: calc(var(--_radius) / 2);
-      padding: 0.6em 0.8em;
+      border: 1px solid var(--_hairline);
+      border-radius: 8px;
+      padding: 0.7em 0.9em;
       overflow-x: auto;
-      font-size: 0.9em;
+      font-size: 0.86em;
+      line-height: 1.5;
     }
     .bubble code {
-      font-family: var(--lumo-font-family-mono, ui-monospace, monospace);
-      font-size: 0.9em;
+      font-family: var(--_mono);
+      font-size: 0.88em;
     }
     .bubble :not(pre) > code {
       background: var(--_code-bg);
-      border-radius: 0.25em;
-      padding: 0.1em 0.3em;
+      border: 1px solid var(--_hairline);
+      border-radius: 4px;
+      padding: 0.05em 0.35em;
     }
     .bubble table {
       border-collapse: collapse;
+      font-size: 0.92em;
+      font-variant-numeric: tabular-nums;
+    }
+    .bubble th {
+      font-family: var(--_mono);
+      font-size: 0.7em;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--_muted);
+      text-align: left;
+      font-weight: 600;
     }
     .bubble :is(th, td) {
-      border: 1px solid var(--_border);
-      padding: 0.25em 0.5em;
+      border-bottom: 1px solid var(--_hairline);
+      padding: 0.35em 0.7em 0.35em 0;
+    }
+    .bubble tr:last-child td {
+      border-bottom: 0;
     }
     .bubble a {
-      color: var(--_primary);
+      color: var(--_accent);
+      text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, var(--_accent) 40%, transparent);
     }
-    .streaming::after {
-      content: '▍';
-      color: var(--_muted);
-      animation: agui-blink 1s steps(2) infinite;
+    .bubble a:hover {
+      border-bottom-color: var(--_accent);
+    }
+    .bubble hr {
+      border: 0;
+      border-top: 1px solid var(--_hairline);
+    }
+
+    /* 流式光标：琥珀色块 */
+    .streaming > :last-child::after,
+    .streaming:empty::after {
+      content: '';
+      display: inline-block;
+      width: 0.5em;
+      height: 1em;
+      margin-left: 0.15em;
+      vertical-align: -0.15em;
+      background: var(--_warn);
+      border-radius: 1px;
+      animation: agui-blink 900ms steps(2) infinite;
     }
     @keyframes agui-blink {
       to {
         visibility: hidden;
       }
     }
+
+    /* ---- 思考块与工具条 ---------------------------------------------- */
     details.thinking,
     details.tool {
-      border: 1px solid var(--_border);
-      border-radius: calc(var(--_radius) / 2);
-      padding: 0.4em 0.7em;
-      font-size: 0.9em;
-      background: transparent;
+      border: 1px solid var(--_hairline);
+      border-radius: 10px;
+      background: var(--_surface-2);
+      font-size: 0.86em;
+      overflow: hidden;
     }
     details summary {
+      list-style: none;
       cursor: pointer;
-      color: var(--_muted);
       display: flex;
-      gap: 0.5em;
+      gap: 0.6em;
       align-items: center;
+      padding: 0.45em 0.8em;
+      color: var(--_muted);
+      user-select: none;
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    details summary::after {
+      content: '';
+      margin-left: auto;
+      width: 0.45em;
+      height: 0.45em;
+      border-right: 1.5px solid var(--_faint);
+      border-bottom: 1.5px solid var(--_faint);
+      transform: rotate(-45deg);
+      transition: transform 160ms;
+    }
+    details[open] summary::after {
+      transform: rotate(45deg);
     }
     details.thinking .body {
       white-space: pre-wrap;
       color: var(--_muted);
-      margin-top: 0.4em;
+      font-style: italic;
+      padding: 0 0.9em 0.7em;
+      position: relative;
+    }
+    details.thinking[open] .body::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--_surface) 50%, transparent) 50%, transparent 80%);
+      background-size: 250% 100%;
+      animation: agui-shimmer 1.8s linear infinite;
+      opacity: 0;
+    }
+    .message:not(.complete) details.thinking[open] .body::after {
+      opacity: 1;
+    }
+    @keyframes agui-shimmer {
+      from {
+        background-position: 150% 0;
+      }
+      to {
+        background-position: -50% 0;
+      }
+    }
+    .led {
+      flex: 0 0 auto;
+      width: 0.55em;
+      height: 0.55em;
+      border-radius: 50%;
+      background: var(--_warn);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--_warn) 22%, transparent);
+    }
+    .led[data-status='streaming'] {
+      animation: agui-pulse 1.1s ease-in-out infinite;
+    }
+    .led[data-status='done'] {
+      background: var(--_ok);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--_ok) 22%, transparent);
+    }
+    @keyframes agui-pulse {
+      50% {
+        box-shadow: 0 0 0 6px color-mix(in srgb, var(--_warn) 8%, transparent);
+      }
+    }
+    .tool .kind {
+      font-family: var(--_mono);
+      font-size: 0.72em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
     .tool .name {
-      font-family: var(--lumo-font-family-mono, ui-monospace, monospace);
-      color: var(--lumo-body-text-color, inherit);
+      font-family: var(--_mono);
+      color: var(--agui-text-color, var(--lumo-body-text-color, inherit));
+      font-weight: 600;
     }
     .tool .status {
-      font-size: var(--lumo-font-size-xs, 0.75rem);
-      padding: 0 0.5em;
-      border-radius: 1em;
-      border: 1px solid var(--_border);
+      font-family: var(--_mono);
+      font-size: 0.72em;
+      letter-spacing: 0.06em;
+      color: var(--_faint);
     }
     .tool .status[data-status='done'] {
-      border-color: var(--lumo-success-color, #16a34a);
-      color: var(--lumo-success-text-color, #15803d);
+      color: var(--_ok);
     }
-    .tool pre {
-      background: var(--_code-bg);
-      border-radius: calc(var(--_radius) / 2);
-      padding: 0.5em 0.7em;
-      overflow-x: auto;
-      margin: 0.4em 0 0;
-      font-size: 0.85em;
+    .tool .body {
+      padding: 0 0.8em 0.7em;
+      display: grid;
+      gap: 0.45em;
     }
     .tool .label {
-      color: var(--_muted);
-      font-size: var(--lumo-font-size-xs, 0.75rem);
-      margin-top: 0.5em;
+      font-family: var(--_mono);
+      font-size: 0.68em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--_faint);
     }
+    .tool pre {
+      margin: 0;
+      background: var(--_code-bg);
+      border: 1px solid var(--_hairline);
+      border-radius: 6px;
+      padding: 0.5em 0.7em;
+      overflow-x: auto;
+      font-family: var(--_mono);
+      font-size: 0.88em;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    /* ---- 操作与错误 ---------------------------------------------------- */
     .actions {
       display: flex;
-      gap: 0.25em;
+      gap: 0.15em;
+      margin-left: 1em;
       opacity: 0;
-      transition: opacity 120ms;
+      transform: translateY(-2px);
+      transition: opacity 140ms, transform 140ms;
     }
     .message:hover .actions,
     .message:focus-within .actions {
       opacity: 1;
-    }
-    .actions button,
-    .chip,
-    .send,
-    .stop {
-      font: inherit;
-      cursor: pointer;
-      border-radius: var(--lumo-border-radius-m, 0.5em);
-      border: 1px solid var(--_border);
-      background: transparent;
-      color: inherit;
+      transform: none;
     }
     .actions button {
-      font-size: var(--lumo-font-size-xs, 0.75rem);
-      padding: 0.1em 0.5em;
+      font-size: 0.74em;
+      padding: 0.2em 0.6em;
+      border-radius: 6px;
       color: var(--_muted);
     }
     .actions button:hover {
+      background: var(--_surface-2);
       color: inherit;
     }
     .error {
-      color: var(--_error);
-      border: 1px solid var(--_error);
-      border-radius: var(--_radius);
-      padding: 0.5em 0.9em;
       align-self: stretch;
+      display: flex;
+      gap: 0.6em;
+      align-items: flex-start;
+      padding: 0.6em 0.9em;
+      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--_error) 35%, transparent);
+      background: color-mix(in srgb, var(--_error) 7%, transparent);
+      color: var(--_error);
+      font-size: 0.92em;
     }
+    .error::before {
+      content: '';
+      flex: 0 0 auto;
+      width: 0.55em;
+      height: 0.55em;
+      margin-top: 0.5em;
+      border-radius: 50%;
+      background: var(--_error);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--_error) 22%, transparent);
+    }
+
+    /* ---- 开场建议 ------------------------------------------------------ */
     .suggestions {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5em;
       justify-content: center;
+      align-content: center;
       margin: auto 0;
+      padding: 2em 0;
     }
     .chip {
-      padding: 0.4em 0.9em;
+      padding: 0.5em 0.95em;
+      border: 1px solid var(--_hairline);
+      border-radius: 999px;
+      color: var(--_muted);
+      background: var(--_surface);
+      transition: border-color 140ms, color 140ms, transform 140ms;
     }
     .chip:hover {
-      background: var(--_assistant-bg);
+      border-color: var(--_accent);
+      color: inherit;
+      transform: translateY(-1px);
     }
+
+    /* ---- 输入区 -------------------------------------------------------- */
     .composer {
       flex: 0 0 auto;
+      padding: calc(var(--_gap) * 0.75) calc(var(--_gap) * 1.25) var(--_gap);
+      border-top: 1px solid var(--_hairline);
+      background: linear-gradient(to bottom, transparent, var(--_surface-2));
+    }
+    .field {
       display: flex;
-      gap: 0.5em;
       align-items: flex-end;
-      padding: var(--_gap);
-      border-top: 1px solid var(--_border);
+      gap: 0.5em;
+      padding: 0.4em 0.4em 0.4em 0.9em;
+      border: 1px solid var(--_hairline);
+      border-radius: 16px;
+      background: var(--_surface);
+      transition: border-color 140ms, box-shadow 140ms;
+    }
+    .field:focus-within {
+      border-color: var(--_accent);
+      box-shadow: 0 0 0 3px var(--_accent-soft);
     }
     textarea {
       flex: 1 1 auto;
       resize: none;
       font: inherit;
+      line-height: 1.45;
       color: inherit;
-      background: var(--lumo-base-color, #fff);
-      border: 1px solid var(--_border);
-      border-radius: var(--lumo-border-radius-m, 0.5em);
-      padding: 0.5em 0.75em;
-      min-height: 2.5em;
+      background: transparent;
+      border: 0;
+      outline: 0;
+      padding: 0.35em 0;
+      min-height: 1.45em;
       max-height: 12em;
-      line-height: 1.4;
-      box-sizing: border-box;
     }
-    textarea:focus {
-      outline: 2px solid var(--_primary);
-      outline-offset: -1px;
+    textarea::placeholder {
+      color: var(--_faint);
+    }
+    .send,
+    .stop {
+      flex: 0 0 auto;
+      width: 2.2em;
+      height: 2.2em;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      transition: background 140ms, transform 140ms, opacity 140ms;
     }
     .send {
-      background: var(--_primary);
-      color: var(--lumo-primary-contrast-color, #fff);
-      border-color: transparent;
-      padding: 0.55em 1em;
+      background: var(--_accent);
+      color: var(--agui-accent-contrast, var(--lumo-primary-contrast-color, #fff));
+    }
+    .send:hover:not(:disabled) {
+      transform: translateY(-1px);
     }
     .send:disabled {
-      opacity: 0.5;
+      opacity: 0.35;
       cursor: default;
     }
+    .send svg,
+    .stop svg {
+      width: 1em;
+      height: 1em;
+    }
     .stop {
-      padding: 0.55em 1em;
+      background: var(--_surface-2);
+      color: var(--_warn);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--_warn) 45%, transparent);
+      animation: agui-ring 1.4s ease-in-out infinite;
+    }
+    @keyframes agui-ring {
+      50% {
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--_warn) 12%, transparent);
+      }
+    }
+    .hint {
+      font-family: var(--_mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.06em;
+      color: var(--_faint);
+      padding: 0.45em 0.6em 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .hint kbd {
+      font: inherit;
+      border: 1px solid var(--_hairline);
+      border-radius: 3px;
+      padding: 0 0.3em;
     }
     .sr-only {
       position: absolute;
@@ -623,25 +900,35 @@ export class AgUiChatElement extends LitElement {
       </div>
       <div class="composer" part="composer">
         <label class="sr-only" for="agui-input">${t.placeholder}</label>
-        <textarea
-          id="agui-input"
-          rows="1"
-          placeholder=${t.placeholder}
-          .value=${this._draft}
-          ?disabled=${this.disabled}
-          @input=${this._onInput}
-          @keydown=${this._onKeydown}
-        ></textarea>
-        ${this.running
-          ? html`<button class="stop" type="button" @click=${this.stop}>${t.stop}</button>`
-          : html`<button
-              class="send"
-              type="button"
-              ?disabled=${this.disabled || !this._draft.trim()}
-              @click=${this._submit}
-            >
-              ${t.send}
-            </button>`}
+        <div class="field">
+          <textarea
+            id="agui-input"
+            rows="1"
+            placeholder=${t.placeholder}
+            .value=${this._draft}
+            ?disabled=${this.disabled}
+            @input=${this._onInput}
+            @keydown=${this._onKeydown}
+          ></textarea>
+          ${this.running
+            ? html`<button class="stop" type="button" title=${t.stop} aria-label=${t.stop} @click=${this.stop}>
+                <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" /></svg>
+              </button>`
+            : html`<button
+                class="send"
+                type="button"
+                title=${t.send}
+                aria-label=${t.send}
+                ?disabled=${this.disabled || !this._draft.trim()}
+                @click=${this._submit}
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3m0 0L3.5 7.5M8 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>`}
+        </div>
+        <div class="hint" aria-hidden="true">
+          <span>${this.running ? t.thinking + '…' : ''}</span>
+          <span><kbd>Enter</kbd> ${t.send} · <kbd>Shift</kbd>+<kbd>Enter</kbd> ↵</span>
+        </div>
       </div>
     `;
   }
@@ -650,7 +937,7 @@ export class AgUiChatElement extends LitElement {
     const streaming = chat.running && m.role === 'assistant' && !m.complete;
     const author = m.role === 'user' ? t.userName : t.assistantName;
     return html`
-      <div class="message" data-role=${m.role} part="message">
+      <div class="message ${m.complete ? 'complete' : ''}" data-role=${m.role} part="message">
         <span class="author">${author}</span>
         ${m.thinking
           ? html`<details class="thinking" part="thinking" ?open=${streaming && !m.content}>
@@ -688,15 +975,18 @@ export class AgUiChatElement extends LitElement {
     return html`
       <details class="tool" part="tool-call" data-status=${status}>
         <summary>
-          <span>${t.toolCall}</span>
+          <span class="led" data-status=${status}></span>
+          <span class="kind">${t.toolCall}</span>
           <span class="name">${c.function.name}</span>
           <span class="status" data-status=${status}>${status}</span>
         </summary>
-        <pre>${prettyJson(c.function.arguments)}</pre>
-        ${result
-          ? html`<div class="label">${t.toolResult}</div>
-              <pre>${prettyJson(result.content)}</pre>`
-          : nothing}
+        <div class="body">
+          <pre>${prettyJson(c.function.arguments)}</pre>
+          ${result
+            ? html`<div class="label">${t.toolResult}</div>
+                <pre>${prettyJson(result.content)}</pre>`
+            : nothing}
+        </div>
       </details>
     `;
   }

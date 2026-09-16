@@ -153,7 +153,7 @@ reverse proxies do not buffer `text/event-stream`.
 
 ## Example: Atlas Order Desk
 
-![Atlas Order Desk: the Approvals agent asked for confirmation, the operator approved, the grid updated](docs/images/atlas-order-desk.png)
+![Atlas Order Desk: the Warehouse agent checked stock through a mock API, one tool card per order, KPI tiles driven by agent state](docs/images/atlas-order-desk.png)
 
 ```bash
 mvn install -DskipTests
@@ -170,7 +170,7 @@ exact code path a real model would.
 | Approvals | hand-written agent + frontend tools | `focusOrder` highlights the grid row, `confirm` opens a Flow dialog, the run resumes with the answer |
 | Analyst | `STEP_*`, `STATE_SNAPSHOT`, `STATE_DELTA` | KPI cards and a plan checklist driven by state events, not chat text |
 | Writer | long Markdown + thinking block | stop mid-stream, regenerate, copy |
-| Chaos | steps + `RUN_ERROR` | errors are events: partial text stays, a banner shows, regenerate recovers |
+| Warehouse | mock warehouse API + steps | one tool card per order, a stock table; ask for an outage to see `RUN_ERROR` as an event: partial text stays, a banner shows, regenerate recovers |
 | External runtime | a bare controller writing SSE frames by hand | the component only speaks the protocol; no add-on class is involved |
 
 Also on the page: a conversation sidebar (in-memory store, restored with `setMessages`), a
