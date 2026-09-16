@@ -464,6 +464,21 @@ export class AgUiChatElement extends LitElement {
       background: var(--_error);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--_error) 22%, transparent);
     }
+    .error .error-text {
+      flex: 1 1 auto;
+      padding-top: 0.1em;
+    }
+    .error .retry {
+      flex: 0 0 auto;
+      font-size: 0.82em;
+      padding: 0.25em 0.7em;
+      border-radius: 6px;
+      border: 1px solid color-mix(in srgb, var(--_error) 45%, transparent);
+      color: var(--_error);
+    }
+    .error .retry:hover {
+      background: color-mix(in srgb, var(--_error) 12%, transparent);
+    }
 
     /* ---- 开场建议 ------------------------------------------------------ */
     .suggestions {
@@ -895,7 +910,12 @@ export class AgUiChatElement extends LitElement {
           (m) => this._renderMessage(m, t, chat, m.id === lastAssistantId),
         )}
         ${chat.error
-          ? html`<div class="error" role="alert" part="error">${t.errorPrefix}: ${chat.error.message}</div>`
+          ? html`<div class="error" role="alert" part="error">
+              <span class="error-text">${t.errorPrefix}: ${chat.error.message}</span>
+              ${indexAfterLastUser(chat.messages) > 0 && !chat.running
+                ? html`<button type="button" class="retry" @click=${this.regenerate}>${t.regenerate}</button>`
+                : nothing}
+            </div>`
           : nothing}
       </div>
       <div class="composer" part="composer">

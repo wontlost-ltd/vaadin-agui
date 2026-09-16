@@ -35,7 +35,7 @@
   arguments/result, thinking blocks shimmer while streaming, the composer is a rounded field with
   an icon send button and a pulsing stop button, an amber streaming caret, refined Markdown
   typography (tables, code, quotes). All colours go through `--agui-*` custom properties with Lumo
-  fallbacks so Aura works unchanged.
+  fallbacks so Aura works unchanged. The error banner offers an inline retry (`regenerate()`).
 - Example redesigned as a dark "control room": Lumo dark with an amber/green signal palette,
   IBM Plex Sans/Mono, LED run indicator, instrument-style KPI tiles, plan checklist, status dots in
   the grid, terminal-style event log, staggered column reveal. All styling lives in `atlas.css`.
