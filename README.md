@@ -173,7 +173,9 @@ exact code path a real model would.
 | Warehouse | mock warehouse API + steps | one tool card per order, a stock table; ask for an outage to see `RUN_ERROR` as an event: partial text stays, a banner shows, regenerate recovers |
 | External runtime | a bare controller writing SSE frames by hand | the component only speaks the protocol; no add-on class is involved |
 
-Also on the page: a conversation sidebar (in-memory store, restored with `setMessages`), a
+Also on the page: a conversation list (in-memory, per UI; it only shows that `RunFinishedEvent` and
+`setMessages` are enough to restore a thread, the persistent, tenant-scoped version with a sidebar
+component is in Pro), a
 parallel lane that streams a second chat at the same time, an English/中文 toggle, `compact` and
 `flat` variants, and a server-side event log that proves Flow hears about each run once.
 [e2e/README.md](e2e/README.md) describes the Playwright suite that locks all of this down.
