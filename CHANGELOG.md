@@ -21,5 +21,12 @@
   callbacks so the turn ends when one is called. Spring AI 2.0 removed
   `internalToolExecutionEnabled`, so this is the only way to keep visibility without reimplementing
   the loop.
-- Example `examples/agui-starter`: scripted `ChatModel` replaying Spring AI's tool loop without an
-  API key, a hand-written agent with thinking and state, server-side probes for E2E.
+- Example `examples/agui-starter` ("Atlas Order Desk"): six switchable agents on mock data — Spring AI
+  order desk with `@Tool` methods, human-in-the-loop approvals with frontend tools and a Flow
+  `ConfirmDialog`, analyst driving KPI cards and a plan through `STATE_SNAPSHOT`/`STATE_DELTA`,
+  long-Markdown writer, chaos agent with `RUN_ERROR`, and an external runtime that writes SSE
+  frames by hand. Conversation sidebar with `setMessages` restore, parallel lane, English/中文,
+  `compact`/`flat` variants, server-side event log, reset button. Scripted `ChatModel` replays
+  Spring AI's internal tool loop so no API key is needed.
+- E2E: 21 Playwright cases × Chromium + Firefox covering streaming, tool calls (backend and
+  frontend), shared state, lifecycle, conversations, protocol compatibility and error recovery.

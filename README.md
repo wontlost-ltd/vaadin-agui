@@ -151,16 +151,30 @@ Parts: `messages`, `message`, `bubble`, `tool-call`, `thinking`, `actions`, `com
 The endpoint is a normal Spring MVC route: put it behind whatever security you use, and make sure
 reverse proxies do not buffer `text/event-stream`.
 
-## Example and tests
+## Example: Atlas Order Desk
 
 ```bash
 mvn install -DskipTests
 mvn -f examples/agui-starter/pom.xml spring-boot:run          # http://localhost:8090
 ```
 
-The starter needs no API key: a scripted `ChatModel` replays Spring AI's internal tool loop, so
-`SpringAiAgent` runs exactly the code path a real model would. See [e2e/README.md](e2e/README.md)
-for the Playwright suite.
+A mock logistics desk with six switchable agents, each built to show one thing. No API key is
+needed: a scripted `ChatModel` replays Spring AI's internal tool loop, so `SpringAiAgent` runs the
+exact code path a real model would.
+
+| Agent | Built with | Shows |
+|---|---|---|
+| Order Desk | `SpringAiAgent` + `@Tool` methods | backend tools run inside the model loop and still appear as cards; a refund changes the grid on the right |
+| Approvals | hand-written agent + frontend tools | `focusOrder` highlights the grid row, `confirm` opens a Flow dialog, the run resumes with the answer |
+| Analyst | `STEP_*`, `STATE_SNAPSHOT`, `STATE_DELTA` | KPI cards and a plan checklist driven by state events, not chat text |
+| Writer | long Markdown + thinking block | stop mid-stream, regenerate, copy |
+| Chaos | steps + `RUN_ERROR` | errors are events: partial text stays, a banner shows, regenerate recovers |
+| External runtime | a bare controller writing SSE frames by hand | the component only speaks the protocol; no add-on class is involved |
+
+Also on the page: a conversation sidebar (in-memory store, restored with `setMessages`), a
+parallel lane that streams a second chat at the same time, an English/中文 toggle, `compact` and
+`flat` variants, and a server-side event log that proves Flow hears about each run once.
+[e2e/README.md](e2e/README.md) describes the Playwright suite that locks all of this down.
 
 ## Licence
 
