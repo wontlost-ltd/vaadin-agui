@@ -37,6 +37,8 @@
   an icon send button and a pulsing stop button, an amber streaming caret, refined Markdown
   typography (tables, code, quotes). All colours go through `--agui-*` custom properties with Lumo
   fallbacks so Aura works unchanged. The error banner offers an inline retry (`regenerate()`).
+- Example favicon: amber mark (peak + LED dot) as SVG, PNG-in-ICO (16/32/48), apple-touch-icon and a
+  512px `icons/icon.png`, linked from `AppShellSettings`.
 - Message actions are icon buttons (copy → check while copied, thumbs up/down, regenerate); the i18n
   text moves to `title` / `aria-label`, and each button carries `data-action` for tests and styling.
 - Example redesigned as a dark "control room": Lumo dark with an amber/green signal palette,
