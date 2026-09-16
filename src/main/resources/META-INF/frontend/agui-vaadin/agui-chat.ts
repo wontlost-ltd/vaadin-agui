@@ -46,6 +46,13 @@ const DEFAULT_I18N: I18n = {
 
 const STICK_THRESHOLD_PX = 24;
 
+/* 消息操作图标：16 格线稿，描边随 currentColor；文字放在 title / aria-label 里 */
+const ICON_COPY = html`<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" /><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></svg>`;
+const ICON_CHECK = html`<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7" /></svg>`;
+const ICON_REFRESH = html`<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6" /><path d="M13 2.5v3h-3" /></svg>`;
+const ICON_THUMB_UP = html`<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7v6H2.5V7z" /><path d="M5 7.5l3-5c1.2 0 1.8.8 1.6 2L9.2 6.5h3.3c.9 0 1.5.8 1.3 1.6l-1 4.2c-.2.7-.8 1.2-1.5 1.2H5" /></svg>`;
+const ICON_THUMB_DOWN = html`<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 9V3h2.5v6z" /><path d="M11 8.5l-3 5c-1.2 0-1.8-.8-1.6-2l.4-2H3.5c-.9 0-1.5-.8-1.3-1.6l1-4.2C3.4 3 4 2.5 4.7 2.5H11" /></svg>`;
+
 @customElement('agui-chat')
 export class AgUiChatElement extends LitElement {
   static override styles = css`
@@ -433,14 +440,25 @@ export class AgUiChatElement extends LitElement {
       transform: none;
     }
     .actions button {
-      font-size: 0.74em;
-      padding: 0.2em 0.6em;
+      display: inline-grid;
+      place-items: center;
+      width: 1.9em;
+      height: 1.9em;
+      padding: 0;
       border-radius: 6px;
       color: var(--_muted);
+    }
+    .actions button svg {
+      width: 1em;
+      height: 1em;
+      display: block;
     }
     .actions button:hover {
       background: var(--_surface-2);
       color: inherit;
+    }
+    .actions button[data-state='copied'] {
+      color: var(--_accent);
     }
     .error {
       align-self: stretch;
@@ -979,13 +997,26 @@ export class AgUiChatElement extends LitElement {
             : nothing}
         ${m.role === 'assistant' && m.complete && m.content
           ? html`<div class="actions" part="actions">
-              <button type="button" @click=${() => this._copy(m)}>
-                ${this._copiedId === m.id ? t.copied : t.copy}
+              <button
+                type="button"
+                data-action="copy"
+                data-state=${this._copiedId === m.id ? 'copied' : 'idle'}
+                title=${this._copiedId === m.id ? t.copied : t.copy}
+                aria-label=${this._copiedId === m.id ? t.copied : t.copy}
+                @click=${() => this._copy(m)}
+              >
+                ${this._copiedId === m.id ? ICON_CHECK : ICON_COPY}
               </button>
-              <button type="button" title=${t.helpfulYes} @click=${() => this._feedback(m, true)}>👍</button>
-              <button type="button" title=${t.helpfulNo} @click=${() => this._feedback(m, false)}>👎</button>
+              <button type="button" data-action="helpful" title=${t.helpfulYes} aria-label=${t.helpfulYes} @click=${() => this._feedback(m, true)}>
+                ${ICON_THUMB_UP}
+              </button>
+              <button type="button" data-action="not-helpful" title=${t.helpfulNo} aria-label=${t.helpfulNo} @click=${() => this._feedback(m, false)}>
+                ${ICON_THUMB_DOWN}
+              </button>
               ${isLastAssistant && !chat.running
-                ? html`<button type="button" @click=${this.regenerate}>${t.regenerate}</button>`
+                ? html`<button type="button" data-action="regenerate" title=${t.regenerate} aria-label=${t.regenerate} @click=${this.regenerate}>
+                    ${ICON_REFRESH}
+                  </button>`
                 : nothing}
             </div>`
           : nothing}

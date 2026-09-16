@@ -37,6 +37,8 @@
   an icon send button and a pulsing stop button, an amber streaming caret, refined Markdown
   typography (tables, code, quotes). All colours go through `--agui-*` custom properties with Lumo
   fallbacks so Aura works unchanged. The error banner offers an inline retry (`regenerate()`).
+- Message actions are icon buttons (copy → check while copied, thumbs up/down, regenerate); the i18n
+  text moves to `title` / `aria-label`, and each button carries `data-action` for tests and styling.
 - Example redesigned as a dark "control room": Lumo dark with an amber/green signal palette,
   IBM Plex Sans/Mono, LED run indicator, instrument-style KPI tiles, plan checklist, status dots in
   the grid, terminal-style event log, staggered column reveal. All styling lives in `atlas.css`.
