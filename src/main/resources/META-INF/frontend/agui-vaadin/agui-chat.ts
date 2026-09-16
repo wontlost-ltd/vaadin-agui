@@ -670,6 +670,8 @@ export class AgUiChatElement extends LitElement {
     this.stop();
     this._pendingFrontendTools.clear();
     this._apply(initialState([], this.agentState));
+    // 状态跟随对话：清空后监听方（例如状态面板）也应回到初始状态
+    this._fire('agui-state-changed', { state: this.agentState ?? {} });
   }
 
   /** 回传前端工具结果；全部待处理工具都有结果后自动续跑。 */
@@ -696,8 +698,10 @@ export class AgUiChatElement extends LitElement {
   protected override willUpdate(changed: PropertyValues<this>): void {
     if (changed.has('messages') && !this.running) {
       this._apply(initialState(this.messages ?? [], this.agentState));
+      this._fire('agui-state-changed', { state: this.agentState ?? {} });
     } else if (changed.has('agentState') && !this.running) {
       this._apply({ ...this._latest, agentState: this.agentState });
+      this._fire('agui-state-changed', { state: this.agentState ?? {} });
     }
     if (changed.has('i18n') && !this.i18n) {
       this.i18n = DEFAULT_I18N;

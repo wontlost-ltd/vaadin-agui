@@ -11,6 +11,7 @@
   tool calls, results, state snapshot and JSON Patch delta, messages snapshot), client-side
   Markdown via marked + DOMPurify, tool-call cards, thinking blocks, sticky scrolling, copy and
   feedback actions, frontend tool round-trips.
+- `StateChangedEvent` also fires when the conversation is cleared or restored, so state listeners follow the conversation.
 - `AgUiEvent` — sealed Jackson 3 model of the 22 AG-UI event types, names verbatim from the spec;
   `Message`, `ToolCall`, `ToolDefinition`, `ContextItem`, `RunAgentInput`.
 - `AgUiAgent` / `AgUiEmitter` — the framework-agnostic SPI.
