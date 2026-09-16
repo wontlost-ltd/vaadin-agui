@@ -1,0 +1,5 @@
+Bundle-Name: AgUiVaadin
+Bundle-SymbolicName: com.wontlost.agui-vaadin
+Export-Package: com.wontlost.agui, com.wontlost.agui.event, com.wontlost.agui.model, com.wontlost.agui.agent, com.wontlost.agui.sse, com.wontlost.agui.spring, com.wontlost.agui.springai
+Import-Package: org.springframework.*;resolution:=optional, tools.jackson.*, *
+Vaadin-OSGi-Extender: true

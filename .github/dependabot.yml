@@ -1,0 +1,45 @@
+# 依赖更新。四套生态各自独立：Maven（库本体与示例）、npm（组件与 E2E）、GitHub Actions。
+# 分组提交：Vaadin 全家桶、Spring 全家桶、Playwright 相关同源，拆开只会产生互相冲突的 PR。
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      vaadin:
+        patterns:
+          - "com.vaadin:*"
+      spring:
+        patterns:
+          - "org.springframework*:*"
+      test-deps:
+        patterns:
+          - "org.junit*"
+          - "org.assertj:*"
+
+  - package-ecosystem: maven
+    directory: /examples/agui-starter
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  # 组件：Lit、marked、DOMPurify 是运行时依赖，会随 jar 分发给下游。
+  - package-ecosystem: npm
+    directory: /src/main/resources/META-INF/frontend/agui-vaadin
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
