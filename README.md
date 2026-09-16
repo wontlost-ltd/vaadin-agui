@@ -153,6 +153,8 @@ reverse proxies do not buffer `text/event-stream`.
 
 ## Example: Atlas Order Desk
 
+![Atlas Order Desk: the Approvals agent asked for confirmation, the operator approved, the grid updated](docs/images/atlas-order-desk.png)
+
 ```bash
 mvn install -DskipTests
 mvn -f examples/agui-starter/pom.xml spring-boot:run          # http://localhost:8090
