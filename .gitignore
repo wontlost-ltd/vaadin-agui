@@ -5,15 +5,6 @@ out/
 .vscode/
 node_modules/
 src/main/resources/META-INF/frontend/agui-vaadin/node_modules/
-examples/agui-starter/src/main/frontend/generated/
-examples/agui-starter/src/main/bundles/
-examples/agui-starter/package.json
-examples/agui-starter/package-lock.json
-examples/agui-starter/tsconfig.json
-examples/agui-starter/types.d.ts
-examples/agui-starter/vite.generated.ts
-e2e/test-results/
-e2e/playwright-report/
 .claude/
 .DS_Store
 *.log

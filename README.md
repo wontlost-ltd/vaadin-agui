@@ -151,35 +151,14 @@ Parts: `messages`, `message`, `bubble`, `tool-call`, `thinking`, `actions`, `com
 The endpoint is a normal Spring MVC route: put it behind whatever security you use, and make sure
 reverse proxies do not buffer `text/event-stream`.
 
-## Example: Atlas Order Desk
+## Example
 
-![Atlas Order Desk: the Warehouse agent checked stock through a mock API, one tool card per order, KPI tiles driven by agent state](docs/images/atlas-order-desk.png)
-
-```bash
-mvn install -DskipTests
-mvn -f examples/agui-starter/pom.xml spring-boot:run          # http://localhost:8090
-```
-
-A mock logistics desk with six switchable agents, each built to show one thing. No API key is
-needed: a scripted `ChatModel` replays Spring AI's internal tool loop, so `SpringAiAgent` runs the
-exact code path a real model would.
-
-| Agent | Built with | Shows |
-|---|---|---|
-| Order Desk | `SpringAiAgent` + `@Tool` methods | backend tools run inside the model loop and still appear as cards; a refund changes the grid on the right |
-| Approvals | hand-written agent + frontend tools | `focusOrder` highlights the grid row, `confirm` opens a Flow dialog, the run resumes with the answer |
-| Analyst | `STEP_*`, `STATE_SNAPSHOT`, `STATE_DELTA` | KPI cards and a plan checklist driven by state events, not chat text |
-| Writer | long Markdown + thinking block | stop mid-stream, regenerate, copy |
-| Warehouse | mock warehouse API + steps | one tool card per order, a stock table; ask for an outage to see `RUN_ERROR` as an event: partial text stays, a banner shows, regenerate recovers |
-| External runtime | a bare controller writing SSE frames by hand | the component only speaks the protocol; no add-on class is involved |
-
-Also on the page: a conversation list (in-memory, per UI; it only shows that `RunFinishedEvent` and
-`setMessages` are enough to restore a thread, the persistent, tenant-scoped version with a sidebar
-component is in Pro), a
-parallel lane that streams a second chat at the same time, an English/中文 toggle, a light/dark
-toggle (follows the system preference by default, remembered in a cookie), `compact` and `flat`
-variants, and a server-side event log that proves Flow hears about each run once.
-[e2e/README.md](e2e/README.md) describes the Playwright suite that locks all of this down.
+**Atlas Order Desk** is the live showcase: https://agui.wontlost.com — six switchable agents on mock
+data (Spring AI order desk with `@Tool` methods, human-in-the-loop approvals, an analyst driving KPI
+cards through `STATE_SNAPSHOT` / `STATE_DELTA`, a long-Markdown writer, a warehouse agent over a mock
+API with an on-demand `RUN_ERROR`, and an external runtime that writes raw SSE), plus a "Get the
+add-on" panel with copy-paste snippets. Its source and Playwright suite live in a separate
+repository so this one stays a library.
 
 ## Pro
 

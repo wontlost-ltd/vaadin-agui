@@ -13,8 +13,7 @@ cd src/main/resources/META-INF/frontend/agui-vaadin && npm ci && npm run typeche
 
 # 端到端测试（Chromium + Firefox）
 mvn install -DskipTests
-mvn -f examples/agui-starter/pom.xml package -Pproduction -DskipTests
-cd e2e && npm ci && npm test
+# The Atlas Order Desk showcase and its Playwright suite live in the private agui-examples repository
 ```
 
 需要 Java 21、Node 24（仓库根目录有 `.nvmrc`）。示例应用不需要任何 API key。

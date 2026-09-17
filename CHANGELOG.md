@@ -23,7 +23,7 @@
   callbacks so the turn ends when one is called. Spring AI 2.0 removed
   `internalToolExecutionEnabled`, so this is the only way to keep visibility without reimplementing
   the loop.
-- Example `examples/agui-starter` ("Atlas Order Desk"): six switchable agents on mock data — Spring AI
+- Example "Atlas Order Desk" (kept in the private agui-examples repository, live at https://agui.wontlost.com): six switchable agents on mock data — Spring AI
   order desk with `@Tool` methods, human-in-the-loop approvals with frontend tools and a Flow
   `ConfirmDialog`, analyst driving KPI cards and a plan through `STATE_SNAPSHOT`/`STATE_DELTA`,
   long-Markdown writer, warehouse agent over a mock API with on-demand `RUN_ERROR`, and an external runtime that writes SSE

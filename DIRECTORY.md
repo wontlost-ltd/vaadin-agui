@@ -48,6 +48,10 @@ resumes once you hand back the result.
 - Lumo and Aura, `compact` and `flat` variants, CSS parts and custom properties
 - Works against any AG-UI endpoint, not only the Spring one shipped here
 
+## Live demo
+
+https://agui.wontlost.com — Atlas Order Desk, six agents on mock data, no API key.
+
 ## Compatibility
 
 Vaadin 25.2+, Java 21+, Jackson 3. Spring Boot 4 and Spring AI 2 are optional dependencies.
