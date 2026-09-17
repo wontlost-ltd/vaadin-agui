@@ -205,7 +205,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.3.1</version>
+                        <version>3.4.0</version>
                         <!-- source-plugin 不继承 jar-plugin 的 excludes；本地构建时前端目录下会有
                              node_modules，不排除的话 sources jar 会混入两万个第三方文件。 -->
                         <configuration>
