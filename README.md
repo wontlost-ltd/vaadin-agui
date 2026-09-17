@@ -1,5 +1,9 @@
 # AG-UI for Vaadin
 
+[![Vaadin Directory](https://img.shields.io/badge/Vaadin%20Directory-AgUiVaadin-00b4f0)](https://vaadin.com/directory/component/aguivaadin)
+[![Maven Central](https://img.shields.io/maven-central/v/com.wontlost/agui-vaadin)](https://central.sonatype.com/artifact/com.wontlost/agui-vaadin)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+
 AG-UI protocol chat component for Vaadin Flow. The browser streams agent events straight from an
 SSE endpoint and renders Markdown, tool calls and thinking blocks itself; the Flow server hears
 about a run only when it starts, finishes, errors, or asks the UI to execute a tool.

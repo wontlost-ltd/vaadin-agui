@@ -25,4 +25,4 @@ Directory 的 Maven 集成在条目审核后自动拉取 Central 的坐标；在
 1. `git tag v0.1.0 && git push origin v0.1.0` → `publish.yml` 校验 CI 后 `mvn -Prelease deploy` 到 Central 并创建 GitHub Release（已完成）。
 2. 等 https://repo1.maven.org/maven2/com/wontlost/agui-vaadin/0.1.0/ 出现（通常 15–60 分钟）。
 3. 在 Directory 表单里填上表，上传截图，提交审核。
-4. 审核通过后把 Directory 链接回填到 README 的 badge 与 `GetStartedDialog` 的链接（现在写的是 `https://vaadin.com/directory/component/agui-vaadin`，以审核后的实际 slug 为准）。
+4. 已上架：slug 为 `aguivaadin`（https://vaadin.com/directory/component/aguivaadin），README badge 与 `GetStartedDialog` 的链接已回填。
