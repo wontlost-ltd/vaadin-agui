@@ -19,7 +19,7 @@
         <vaadin.version>25.2.8</vaadin.version>
         <!-- Spring 与 Spring AI 只作可选依赖：不用它们的应用不会被拉进任何 Spring 类。
              版本由 Boot 4 / Spring AI 2 的 BOM 管理，与 Vaadin 25 同一代 Jackson 3。 -->
-        <spring-boot.version>4.0.8</spring-boot.version>
+        <spring-boot.version>4.1.1</spring-boot.version>
         <spring-ai.version>2.0.1</spring-ai.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
