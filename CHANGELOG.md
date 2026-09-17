@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-09-17)
 
 - `AgUiChat` — Flow component wrapping `<agui-chat>`: agent URL, thread id, initial messages,
   suggestions, per-run context, frontend tool declarations, forwarded props, shared state, i18n,
