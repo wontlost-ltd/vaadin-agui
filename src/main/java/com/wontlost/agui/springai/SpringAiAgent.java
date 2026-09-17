@@ -12,6 +12,8 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
@@ -34,6 +36,7 @@ import com.wontlost.agui.model.RunAgentInput;
 import com.wontlost.agui.model.ToolCall;
 
 import reactor.core.Disposable;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * 把 Spring AI {@link ChatModel} 的流式输出转换成 AG-UI 事件流。
@@ -54,6 +57,9 @@ import reactor.core.Disposable;
  * 对话记忆不在这里维护：AG-UI 每次运行都携带完整消息，agent 是无状态的。
  */
 public final class SpringAiAgent implements AgUiAgent {
+
+    /** 运行结束前发出的自定义事件名，值为 {@code {promptTokens, completionTokens, model}}。 */
+    public static final String USAGE_EVENT = "usage";
 
     private final ChatModel chatModel;
     private final String systemPrompt;
@@ -90,6 +96,7 @@ public final class SpringAiAgent implements AgUiAgent {
                 },
                 () -> {
                     state.endText();
+                    state.emitUsage();
                     emitter.emit(new AgUiEvent.RunFinished(threadId, runId));
                     emitter.complete();
                     done.countDown();
@@ -193,12 +200,16 @@ public final class SpringAiAgent implements AgUiAgent {
     static final class StreamState {
         private final AgUiEmitter emitter;
         private String textMessageId;
+        private int promptTokens;
+        private int completionTokens;
+        private String model;
 
         StreamState(AgUiEmitter emitter) {
             this.emitter = emitter;
         }
 
         synchronized void onChunk(ChatResponse response) {
+            recordUsage(response);
             for (Generation g : response.getResults()) {
                 // returnDirect 产生的"生成"是前端工具的占位结果，不是模型文本
                 if (ToolExecutionResult.FINISH_REASON.equals(g.getMetadata().getFinishReason())) {
@@ -214,6 +225,45 @@ public final class SpringAiAgent implements AgUiAgent {
                 }
                 emitter.emit(new AgUiEvent.TextMessageContent(textMessageId, text));
             }
+        }
+
+        /**
+         * 记住模型报告的用量。流式响应里用量通常只在最后一块出现，且是整轮累计值，取"最大"即可；
+         * 内部工具循环会有多次模型调用，把每次的累计值相加。
+         */
+        private void recordUsage(ChatResponse response) {
+            ChatResponseMetadata metadata = response.getMetadata();
+            if (metadata == null) {
+                return;
+            }
+            if (metadata.getModel() != null && !metadata.getModel().isEmpty()) {
+                model = metadata.getModel();
+            }
+            Usage usage = metadata.getUsage();
+            if (usage == null) {
+                return;
+            }
+            int prompt = usage.getPromptTokens() == null ? 0 : usage.getPromptTokens();
+            int completion = usage.getCompletionTokens() == null ? 0 : usage.getCompletionTokens();
+            if (prompt == 0 && completion == 0) {
+                return;
+            }
+            promptTokens += prompt;
+            completionTokens += completion;
+        }
+
+        /** 运行结束前发出 {@code CUSTOM usage}，计量与看板据此计费；模型没报用量就不发。 */
+        synchronized void emitUsage() {
+            if (promptTokens == 0 && completionTokens == 0) {
+                return;
+            }
+            ObjectNode value = AgUiJson.mapper().createObjectNode();
+            value.put("promptTokens", promptTokens);
+            value.put("completionTokens", completionTokens);
+            if (model != null) {
+                value.put("model", model);
+            }
+            emitter.emit(new AgUiEvent.Custom(USAGE_EVENT, value));
         }
 
         synchronized void endText() {

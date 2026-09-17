@@ -33,6 +33,26 @@ class SpringAiAgentTest {
     }
 
     @Test
+    @DisplayName("模型报告了用量：RUN_FINISHED 前发 CUSTOM usage，带 token 数与模型名；没报告就不发")
+    void emitsUsage() {
+        SpringAiAgent agent = SpringAiAgent.builder(ScriptedChatModel.textOnly("Hel", "lo").withUsage(12, 7, "gpt-test")).build();
+        CollectingEmitter emitter = new CollectingEmitter();
+        agent.run(input(List.of(Message.user("hi")), List.of()), emitter);
+
+        assertThat(emitter.types()).containsExactly("RunStarted", "TextMessageStart", "TextMessageContent",
+                "TextMessageContent", "TextMessageEnd", "Custom", "RunFinished");
+        AgUiEvent.Custom usage = (AgUiEvent.Custom) emitter.events().get(5);
+        assertThat(usage.name()).isEqualTo(SpringAiAgent.USAGE_EVENT);
+        assertThat(usage.value().get("promptTokens").asInt()).isEqualTo(12);
+        assertThat(usage.value().get("completionTokens").asInt()).isEqualTo(7);
+        assertThat(usage.value().get("model").asString()).isEqualTo("gpt-test");
+
+        CollectingEmitter silent = new CollectingEmitter();
+        SpringAiAgent.builder(ScriptedChatModel.textOnly("x")).build().run(input(List.of(Message.user("hi")), List.of()), silent);
+        assertThat(silent.types()).doesNotContain("Custom");
+    }
+
+    @Test
     @DisplayName("纯文本回答：一个文本消息，块按序流出，运行以 RUN_FINISHED 收尾")
     void streamsText() {
         SpringAiAgent agent = SpringAiAgent.builder(ScriptedChatModel.textOnly("Hel", "lo")).build();

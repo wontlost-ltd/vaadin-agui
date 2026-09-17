@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -40,6 +43,25 @@ public final class ScriptedChatModel implements ChatModel {
         return new ScriptedChatModel(p -> List.of(), List.of(chunks));
     }
 
+    private Usage usageOnLastChunk;
+    private String modelName;
+
+    /** 让最后一块带上用量与模型名，模拟真实提供商的流式响应。 */
+    public ScriptedChatModel withUsage(int promptTokens, int completionTokens, String model) {
+        this.usageOnLastChunk = new DefaultUsage(promptTokens, completionTokens);
+        this.modelName = model;
+        return this;
+    }
+
+    private ChatResponseMetadata metadataFor(String chunk) {
+        if (usageOnLastChunk == null) {
+            return ChatResponseMetadata.builder().build();
+        }
+        boolean last = textChunks.indexOf(chunk) == textChunks.size() - 1;
+        ChatResponseMetadata.Builder b = ChatResponseMetadata.builder().model(modelName);
+        return (last ? b.usage(usageOnLastChunk) : b).build();
+    }
+
     @Override
     public ChatResponse call(Prompt prompt) {
         return stream(prompt).reduce((a, b) -> b).block();
@@ -60,7 +82,7 @@ public final class ScriptedChatModel implements ChatModel {
             });
         }
         return Flux.fromIterable(textChunks)
-                .map(chunk -> new ChatResponse(List.of(new Generation(new AssistantMessage(chunk)))));
+                .map(chunk -> new ChatResponse(List.of(new Generation(new AssistantMessage(chunk))), metadataFor(chunk)));
     }
 
     /** 常用脚本：历史里还没有工具响应时发起一次指定工具调用。 */

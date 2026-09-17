@@ -17,7 +17,8 @@
 - `AgUiAgent` / `AgUiEmitter` — the framework-agnostic SPI.
 - Spring (optional): `AgUiController` at `POST ${agui.path}/{beanName}` returning SSE, agents run
   on the application task executor, Boot 4 auto-configuration, `agui.path` / `agui.timeout`.
-- Spring AI (optional): `SpringAiAgent`. Wraps backend `ToolCallback`s per run so the model's
+- Spring AI (optional): `SpringAiAgent` emits a `CUSTOM usage` event (`promptTokens`, `completionTokens`,
+  `model`) before `RUN_FINISHED` whenever the model reports usage, so metering can bill exact numbers. Wraps backend `ToolCallback`s per run so the model's
   internal tool loop still emits `TOOL_CALL_*` events; registers frontend tools as `returnDirect`
   callbacks so the turn ends when one is called. Spring AI 2.0 removed
   `internalToolExecutionEnabled`, so this is the only way to keep visibility without reimplementing
