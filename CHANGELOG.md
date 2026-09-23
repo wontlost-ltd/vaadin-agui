@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Vaadin Platform 25.2.8 → 25.3.0.
+
 ## 0.1.0 (2026-09-17)
 
 - `AgUiChat` — Flow component wrapping `<agui-chat>`: agent URL, thread id, initial messages,
