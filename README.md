@@ -40,7 +40,7 @@ implementation("com.wontlost:agui-vaadin:0.1.0")
 
 | Dependency | Version | Notes |
 |---|---|---|
-| Vaadin Platform | 25.2.8+ | 25.x series, Lumo and Aura |
+| Vaadin Platform | 25.3.0+ | 25.x series, Lumo and Aura |
 | Java | 21+ | Vaadin 25 baseline |
 | Jackson | 3 | the one Vaadin 25 and Spring Boot 4 ship; `provided` |
 | Spring Boot | 4.0+ | optional: SSE endpoint + auto-configuration |
