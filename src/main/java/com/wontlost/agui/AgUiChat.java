@@ -44,7 +44,7 @@ import tools.jackson.databind.node.ObjectNode;
 @Tag("agui-chat")
 @JsModule("./agui-vaadin/agui-chat.ts")
 @NpmPackage(value = "lit", version = "^3.3.3")
-@NpmPackage(value = "marked", version = "^15.0.12")
+@NpmPackage(value = "marked", version = "^18.0.13")
 @NpmPackage(value = "dompurify", version = "^3.2.6")
 public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, HasEnabled {
 
