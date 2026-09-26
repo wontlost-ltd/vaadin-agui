@@ -3,6 +3,17 @@
 ## Unreleased
 
 - Vaadin Platform 25.2.8 → 25.3.0.
+- 修复 **JUnit 版本声明被静默忽略**：pom 在依赖声明处写的 `junit-jupiter` 6.1.3
+  实际从未生效，全部 JUnit 构件仍解析为 **6.0.3**。原因是
+  `spring-boot-dependencies` 用 `junit-jupiter.version` 管理整组 JUnit 构件
+  （4.1.1 对应 6.0.3），BOM 的 dependencyManagement 优先于传递依赖的版本，
+  于是声明被覆盖。构建当时是绿的——因为六个构件碰巧**一致地**停在 6.0.3——
+  但这掩盖了两个问题：想要的版本没装上，且下次任一构件被单独提级就会分裂成
+  混合版本，surefire 随即 `NoClassDefFoundError`、一个测试都跑不起来。
+  改为显式 import `junit-bom` 并置于 `spring-boot-dependencies` **之前**，
+  版本由新增的 `${junit.version}` 单点控制（与 `jackson-bom` 的处理方式一致）。
+  现六个构件齐平 6.1.3；已双向验证 `${junit.version}` 确实压过 Spring Boot 的 BOM。
+  注意此类分裂只在 `mvn verify` 下暴露，`mvn test` 不触发。
 
 ## 0.1.0 (2026-09-17)
 

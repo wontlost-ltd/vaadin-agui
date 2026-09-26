@@ -19,6 +19,14 @@
         <vaadin.version>25.3.0</vaadin.version>
         <!-- Spring 与 Spring AI 只作可选依赖：不用它们的应用不会被拉进任何 Spring 类。
              版本由 Boot 4 / Spring AI 2 的 BOM 管理，与 Vaadin 25 同一代 Jackson 3。 -->
+        <!--
+            JUnit 版本基线。必须显式 import junit-bom，且置于 spring-boot-dependencies
+            之前：Spring Boot 的 BOM 用 junit-jupiter.version 管理全部 JUnit 构件
+            （4.1.1 对应 6.0.3），若不覆盖，本仓在依赖声明处写的版本会被静默忽略，
+            升级时 api/params/engine 各自跟到不同版本，surefire 会因 JUnit jar
+            版本不一致而 NoClassDefFoundError 直接失败（且只在 mvn verify 下暴露）。
+        -->
+        <junit.version>6.1.3</junit.version>
         <spring-boot.version>4.1.1</spring-boot.version>
         <spring-ai.version>2.0.1</spring-ai.version>
         <maven.compiler.release>21</maven.compiler.release>
@@ -46,6 +54,13 @@
     </developers>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <type>pom</type>
+                <scope>import</scope>
+                <version>${junit.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-bom</artifactId>
@@ -109,7 +124,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>6.1.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
