@@ -6,7 +6,7 @@
     <groupId>com.wontlost</groupId>
     <artifactId>agui-vaadin</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <name>AgUiVaadin</name>
     <description>AG-UI protocol chat component for Vaadin Flow: browser-direct SSE streaming, structured tool-call events, thread-scoped state</description>
     <url>https://github.com/wontlost-ltd/vaadin-agui</url>

@@ -1,8 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-09-27)
 
 - Vaadin Platform 25.2.8 → 25.3.0.
+- **`marked` 15.0.12 → 18.0.13**（跨三个 major）。该依赖经 `AgUiChat` 上的
+  `@NpmPackage` 注解随 jar 分发，消费端会实际安装到新版本，故在此记录。
+  本库只用到 `marked.setOptions({gfm, breaks, async})` 与 `marked.parse()`
+  两处 API，已在 18.0.13 上实测：`parse` 仍返回 `string`（非 Promise），
+  `gfm` / `breaks` 行为不变，标题、强调、行内代码、列表、围栏代码块与软换行
+  的输出 HTML 与此前一致。渲染结果仍经 DOMPurify 消毒，外链处理由 DOMPurify
+  钩子负责、不依赖 marked 的 renderer，故 renderer 相关的破坏性变更不影响本库。
+  消费端无需改动。
 - 修复 **JUnit 版本声明被静默忽略**：pom 在依赖声明处写的 `junit-jupiter` 6.1.3
   实际从未生效，全部 JUnit 构件仍解析为 **6.0.3**。原因是
   `spring-boot-dependencies` 用 `junit-jupiter.version` 管理整组 JUnit 构件
