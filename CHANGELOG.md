@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 (2026-10-20)
+
+- 新增：代码块动作工具栏（`AgUiChat#setCodeActions(AgUiCodeAction...)`，前端属性 `codeActions`），支持复制 / 插入 / 替换。
+- 新增：`agui-code-action` 事件（`AgUiChat.CodeActionEvent`：action、code、language、messageId），宿主可据此把代码写回编辑器。
+- 新增：`AgUiChatI18n` 的 `copyCode`、`insertCode`、`replaceCode` 文案。
+- 消息元素增加 `data-message-id` 属性。
+
 ## 0.1.1 (2026-09-27)
 
 - Vaadin Platform 25.2.8 → 25.3.0.
