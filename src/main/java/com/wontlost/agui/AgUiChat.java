@@ -126,6 +126,12 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         getElement().setPropertyJson("agentState", state);
     }
 
+    /** 设置每个代码块工具栏上显示的动作（默认只有复制）。 */
+    public void setCodeActions(AgUiCodeAction... actions) {
+        getElement().setPropertyList("codeActions",
+                Arrays.stream(actions).map(AgUiCodeAction::getValue).toList());
+    }
+
     public void setI18n(AgUiChatI18n i18n) {
         getElement().setPropertyBean("i18n", Objects.requireNonNull(i18n, "i18n"));
     }
@@ -195,6 +201,10 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
 
     public Registration addFeedbackListener(ComponentEventListener<FeedbackEvent> listener) {
         return addListener(FeedbackEvent.class, listener);
+    }
+
+    public Registration addCodeActionListener(ComponentEventListener<CodeActionEvent> listener) {
+        return addListener(CodeActionEvent.class, listener);
     }
 
     @DomEvent("agui-run-started")
@@ -362,6 +372,43 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
 
         public boolean isPositive() {
             return positive;
+        }
+    }
+
+    /** 用户点击代码块上的「插入/替换/复制」时触发；宿主据此把代码写回编辑器等。 */
+    @DomEvent("agui-code-action")
+    public static class CodeActionEvent extends ComponentEvent<AgUiChat> {
+        private final String action;
+        private final String code;
+        private final String language;
+        private final String messageId;
+
+        public CodeActionEvent(AgUiChat source, boolean fromClient,
+                @EventData("event.detail.action") String action,
+                @EventData("event.detail.code") String code,
+                @EventData("event.detail.language") String language,
+                @EventData("event.detail.messageId") String messageId) {
+            super(source, fromClient);
+            this.action = action;
+            this.code = code;
+            this.language = language;
+            this.messageId = messageId;
+        }
+
+        public String getAction() {
+            return action;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public String getLanguage() {
+            return language;
+        }
+
+        public String getMessageId() {
+            return messageId;
         }
     }
 }

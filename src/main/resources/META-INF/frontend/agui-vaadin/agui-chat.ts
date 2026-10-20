@@ -11,7 +11,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 import { findToolResult, indexAfterLastUser, initialState, reduce, toWireMessages } from './agui-reducer.js';
-import { prettyJson, renderMarkdown } from './agui-markdown.js';
+import { codeLanguage, decorateCodeBlocks, prettyJson, renderMarkdown, type CodeAction } from './agui-markdown.js';
 import { runAgent } from './agui-sse.js';
 import type {
   AgUiEvent,
@@ -42,6 +42,9 @@ const DEFAULT_I18N: I18n = {
   cancelled: 'Stopped',
   helpfulYes: 'Helpful',
   helpfulNo: 'Not helpful',
+  copyCode: 'Copy code',
+  insertCode: 'Insert',
+  replaceCode: 'Replace',
 };
 
 const STICK_THRESHOLD_PX = 24;
@@ -189,6 +192,22 @@ export class AgUiChatElement extends LitElement {
     }
 
     /* Markdown 排版 */
+    .code-actions {
+      display: flex;
+      gap: 0.25rem;
+      justify-content: flex-end;
+      margin: -0.25rem 0 0.5rem;
+    }
+    .code-actions button {
+      font: inherit;
+      font-size: 0.75rem;
+      padding: 0.125rem 0.5rem;
+      border: 1px solid var(--lumo-contrast-20pct, #ccc);
+      border-radius: 0.25rem;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
     .bubble :is(p, ul, ol, pre, blockquote, table, h1, h2, h3, h4) {
       margin: 0.45em 0;
     }
@@ -630,6 +649,7 @@ export class AgUiChatElement extends LitElement {
   @property({ type: Array }) suggestions: string[] = [];
   @property({ type: Array }) tools: ToolDefinition[] = [];
   @property({ type: Array }) context: ContextItem[] = [];
+  @property({ type: Array, attribute: false }) codeActions: CodeAction[] = ['copy'];
   @property({ type: Object }) forwardedProps: unknown = null;
   @property({ type: Object }) agentState: unknown = {};
   @property({ type: Object }) i18n: I18n = DEFAULT_I18N;
@@ -727,6 +747,13 @@ export class AgUiChatElement extends LitElement {
   }
 
   protected override updated(): void {
+    // 流式期间气泡每个分片都会重绘，等运行结束再挂代码块工具栏
+    const t = this.i18n ?? DEFAULT_I18N;
+    decorateCodeBlocks(this.renderRoot, this.running ? [] : (this.codeActions ?? []), {
+      copy: t.copyCode,
+      insert: t.insertCode,
+      replace: t.replaceCode,
+    });
     if (this._stickToBottom && this._list) {
       this._list.scrollTop = this._list.scrollHeight;
     }
@@ -857,6 +884,17 @@ export class AgUiChatElement extends LitElement {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   }
 
+  private _onCodeActionClick(e: Event): void {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-code-action]');
+    if (!btn) return;
+    const pre = btn.parentElement?.previousElementSibling as HTMLPreElement | null;
+    const code = pre?.querySelector('code')?.textContent ?? pre?.textContent ?? '';
+    const messageId = btn.closest<HTMLElement>('[data-message-id]')?.dataset.messageId ?? '';
+    const action = btn.dataset.codeAction as CodeAction;
+    if (action === 'copy') void navigator.clipboard?.writeText(code);
+    this._fire('agui-code-action', { action, code, language: pre ? codeLanguage(pre) : '', messageId });
+  }
+
   // ---- 交互 ---------------------------------------------------------------
 
   private _onScroll(): void {
@@ -918,7 +956,7 @@ export class AgUiChatElement extends LitElement {
     const lastAssistantId = [...visible].reverse().find((m) => m.role === 'assistant')?.id;
 
     return html`
-      <div class="messages" part="messages" @scroll=${this._onScroll} aria-live="polite" aria-relevant="additions text">
+      <div class="messages" part="messages" @scroll=${this._onScroll} @click=${this._onCodeActionClick} aria-live="polite" aria-relevant="additions text">
         ${visible.length === 0 && this.suggestions?.length && !this.disabled
           ? html`<div class="suggestions" part="suggestions">
               ${this.suggestions.map(
@@ -979,7 +1017,7 @@ export class AgUiChatElement extends LitElement {
     const streaming = chat.running && m.role === 'assistant' && !m.complete;
     const author = m.role === 'user' ? t.userName : t.assistantName;
     return html`
-      <div class="message ${m.complete ? 'complete' : ''}" data-role=${m.role} part="message">
+      <div class="message ${m.complete ? 'complete' : ''}" data-role=${m.role} data-message-id=${m.id} part="message">
         <span class="author">${author}</span>
         ${m.thinking
           ? html`<details class="thinking" part="thinking" ?open=${streaming && !m.content}>

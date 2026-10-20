@@ -111,4 +111,7 @@ export interface I18n {
   cancelled: string;
   helpfulYes: string;
   helpfulNo: string;
+  copyCode: string;
+  insertCode: string;
+  replaceCode: string;
 }

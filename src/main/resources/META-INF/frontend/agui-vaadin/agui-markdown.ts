@@ -41,3 +41,38 @@ export function prettyJson(text: string | null | undefined): string {
     return text;
   }
 }
+
+/** 代码块动作：copy | insert | replace */
+export type CodeAction = 'copy' | 'insert' | 'replace';
+
+/**
+ * 给已渲染气泡中的每个 <pre> 加一行动作工具栏（幂等：已处理的块跳过）。
+ * 在 DOMPurify 之后执行，按钮不进入消毒流程；点击由宿主元素委托处理。
+ */
+export function decorateCodeBlocks(
+  root: ParentNode,
+  actions: CodeAction[],
+  labels: Record<CodeAction, string>,
+): void {
+  if (actions.length === 0) return;
+  root.querySelectorAll<HTMLPreElement>('.bubble pre:not([data-code-decorated])').forEach((pre) => {
+    pre.setAttribute('data-code-decorated', '');
+    const bar = document.createElement('div');
+    bar.className = 'code-actions';
+    bar.setAttribute('part', 'code-actions');
+    for (const action of actions) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.codeAction = action;
+      btn.textContent = labels[action];
+      bar.appendChild(btn);
+    }
+    pre.insertAdjacentElement('afterend', bar);
+  });
+}
+
+/** 从 <pre><code class="language-x"> 取语言名。 */
+export function codeLanguage(pre: HTMLPreElement): string {
+  const cls = pre.querySelector('code')?.className ?? '';
+  return /language-(\S+)/.exec(cls)?.[1] ?? '';
+}
