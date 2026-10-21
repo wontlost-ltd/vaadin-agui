@@ -23,6 +23,9 @@ public class AgUiChatI18n implements Serializable {
     private String cancelled = "Stopped";
     private String helpfulYes = "Helpful";
     private String helpfulNo = "Not helpful";
+    private String copyCode = "Copy code";
+    private String insertCode = "Insert";
+    private String replaceCode = "Replace";
 
     public String getPlaceholder() {
         return placeholder;
@@ -156,6 +159,33 @@ public class AgUiChatI18n implements Serializable {
 
     public AgUiChatI18n setHelpfulNo(String helpfulNo) {
         this.helpfulNo = helpfulNo;
+        return this;
+    }
+
+    public String getCopyCode() {
+        return copyCode;
+    }
+
+    public AgUiChatI18n setCopyCode(String copyCode) {
+        this.copyCode = copyCode;
+        return this;
+    }
+
+    public String getInsertCode() {
+        return insertCode;
+    }
+
+    public AgUiChatI18n setInsertCode(String insertCode) {
+        this.insertCode = insertCode;
+        return this;
+    }
+
+    public String getReplaceCode() {
+        return replaceCode;
+    }
+
+    public AgUiChatI18n setReplaceCode(String replaceCode) {
+        this.replaceCode = replaceCode;
         return this;
     }
 }
