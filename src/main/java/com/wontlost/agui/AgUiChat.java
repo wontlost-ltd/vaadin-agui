@@ -1,6 +1,7 @@
 package com.wontlost.agui;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +53,8 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
     };
 
     private List<Message> messages = List.of();
+    /** 服务端镜像的反馈投票（消息 id → 是否有帮助），与前端 feedback 属性保持一致。 */
+    private final Map<String, Boolean> feedback = new LinkedHashMap<>();
 
     public AgUiChat(String agentUrl) {
         setAgentUrl(agentUrl);
@@ -59,6 +62,8 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         setI18n(new AgUiChatI18n());
         // 客户端每次运行结束都会回传完整对话，服务端只保留镜像，不做二次归约
         addRunFinishedListener(e -> messages = e.getMessages());
+        // 用户点击后同步镜像，避免重新挂载时用过期的属性值覆盖浏览器里的投票
+        addFeedbackListener(e -> putFeedback(e.getMessageId(), e.getHelpful()));
     }
 
     // ---- 连接与会话 ---------------------------------------------------
@@ -132,6 +137,32 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
                 Arrays.stream(actions).map(AgUiCodeAction::getValue).toList());
     }
 
+    /**
+     * 设置某条助手消息上的反馈投票，例如页面重载后恢复用户之前的选择。
+     *
+     * @param messageId 消息 id
+     * @param helpful   {@code true} 有帮助，{@code false} 没帮助，{@code null} 清除投票
+     */
+    public void setFeedback(String messageId, Boolean helpful) {
+        putFeedback(Objects.requireNonNull(messageId, "messageId"), helpful);
+    }
+
+    /** 返回某条消息当前的反馈投票；未投票时为 {@code null}。 */
+    public Boolean getFeedback(String messageId) {
+        return feedback.get(messageId);
+    }
+
+    private void putFeedback(String messageId, Boolean helpful) {
+        if (helpful == null) {
+            feedback.remove(messageId);
+        } else {
+            feedback.put(messageId, helpful);
+        }
+        Map<String, String> wire = new LinkedHashMap<>();
+        feedback.forEach((id, up) -> wire.put(id, up ? "up" : "down"));
+        getElement().setPropertyMap("feedback", wire);
+    }
+
     public void setI18n(AgUiChatI18n i18n) {
         getElement().setPropertyBean("i18n", Objects.requireNonNull(i18n, "i18n"));
     }
@@ -165,6 +196,8 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
     public void clear() {
         setThreadId(UUID.randomUUID().toString());
         messages = List.of();
+        feedback.clear();
+        getElement().setPropertyMap("feedback", Map.of());
         getElement().callJsFunction("clear");
     }
 
@@ -353,25 +386,52 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         }
     }
 
+    /**
+     * 用户点击「有帮助 / 没帮助」时触发。再次点击同一按钮会撤销投票，此时
+     * {@link #isCleared()} 为 {@code true}、{@link #getHelpful()} 为 {@code null}；
+     * {@link #isPositive()} 始终表示被点击的是哪个按钮。
+     */
     @DomEvent("agui-feedback")
     public static class FeedbackEvent extends ComponentEvent<AgUiChat> {
         private final String messageId;
         private final boolean positive;
+        private final String value;
+
+        /** 等价于一次未撤销的投票，保留给手动构造事件的既有调用方。 */
+        public FeedbackEvent(AgUiChat source, boolean fromClient, String messageId, boolean positive) {
+            this(source, fromClient, messageId, positive, positive ? "up" : "down");
+        }
 
         public FeedbackEvent(AgUiChat source, boolean fromClient,
                 @EventData("event.detail.messageId") String messageId,
-                @EventData("event.detail.positive") boolean positive) {
+                @EventData("event.detail.positive") boolean positive,
+                @EventData("event.detail.value") String value) {
             super(source, fromClient);
             this.messageId = messageId;
             this.positive = positive;
+            this.value = value;
         }
 
         public String getMessageId() {
             return messageId;
         }
 
+        /** 被点击的按钮：{@code true} 为「有帮助」，{@code false} 为「没帮助」。 */
         public boolean isPositive() {
             return positive;
+        }
+
+        /** 点击后的投票状态：{@code TRUE} 有帮助，{@code FALSE} 没帮助，{@code null} 已撤销。 */
+        public Boolean getHelpful() {
+            if ("up".equals(value)) {
+                return Boolean.TRUE;
+            }
+            return "down".equals(value) ? Boolean.FALSE : null;
+        }
+
+        /** 本次点击是否撤销了之前的投票。 */
+        public boolean isCleared() {
+            return getHelpful() == null;
         }
     }
 

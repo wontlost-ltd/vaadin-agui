@@ -17,6 +17,7 @@ import type {
   AgUiEvent,
   ChatState,
   ContextItem,
+  FeedbackValue,
   I18n,
   Message,
   RunAgentInput,
@@ -493,6 +494,21 @@ export class AgUiChatElement extends LitElement {
     .actions button[data-state='copied'] {
       color: var(--_accent);
     }
+    /* 已投票的按钮：强调色 + 底色 + 内描边，并把拇指袖口填实，不只靠颜色区分 */
+    .actions button[aria-pressed='true'],
+    .actions button[aria-pressed='true']:hover {
+      color: var(--_accent);
+      background: color-mix(in srgb, var(--_accent) 16%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--_accent) 45%, transparent);
+    }
+    .actions button[aria-pressed='true'] svg path:first-child {
+      fill: currentColor;
+    }
+    /* 有投票时操作条常驻，否则离开悬停后用户看不到自己的选择 */
+    .actions[data-voted] {
+      opacity: 1;
+      transform: none;
+    }
     .error {
       align-self: stretch;
       display: flex;
@@ -668,6 +684,8 @@ export class AgUiChatElement extends LitElement {
   @property({ type: Array }) tools: ToolDefinition[] = [];
   @property({ type: Array }) context: ContextItem[] = [];
   @property({ type: Array, attribute: false }) codeActions: CodeAction[] = ['copy'];
+  /** 按消息 id 记录的反馈投票；服务端可整体下发以恢复历史投票，用户点击时就地更新。 */
+  @property({ type: Object, attribute: false }) feedback: Record<string, FeedbackValue> = {};
   @property({ type: Object }) forwardedProps: unknown = null;
   @property({ type: Object }) agentState: unknown = {};
   @property({ type: Object }) i18n: I18n = DEFAULT_I18N;
@@ -726,6 +744,7 @@ export class AgUiChatElement extends LitElement {
     this.stop();
     this._pendingFrontendTools.clear();
     this._apply(initialState([], this.agentState));
+    this.feedback = {};
     // 状态跟随对话：清空后监听方（例如状态面板）也应回到初始状态
     this._fire('agui-state-changed', { state: this.agentState ?? {} });
   }
@@ -961,8 +980,18 @@ export class AgUiChatElement extends LitElement {
     }
   }
 
+  /** 再次点击同一票即撤销，点另一票则切换；positive 保持「点的是哪个按钮」的原语义，value 是点击后的新状态。 */
   private _feedback(message: UiMessage, positive: boolean): void {
-    this._fire('agui-feedback', { messageId: message.id, positive });
+    const clicked: FeedbackValue = positive ? 'up' : 'down';
+    const value: FeedbackValue | null = this.feedback?.[message.id] === clicked ? null : clicked;
+    const next = { ...(this.feedback ?? {}) };
+    if (value) {
+      next[message.id] = value;
+    } else {
+      delete next[message.id];
+    }
+    this.feedback = next;
+    this._fire('agui-feedback', { messageId: message.id, positive, value });
   }
 
   // ---- 渲染 ---------------------------------------------------------------
@@ -1034,6 +1063,7 @@ export class AgUiChatElement extends LitElement {
   private _renderMessage(m: UiMessage, t: I18n, chat: ChatState, isLastAssistant: boolean) {
     const streaming = chat.running && m.role === 'assistant' && !m.complete;
     const author = m.role === 'user' ? t.userName : t.assistantName;
+    const vote = this.feedback?.[m.id] ?? null;
     return html`
       <div class="message ${m.complete ? 'complete' : ''}" data-role=${m.role} data-message-id=${m.id} part="message">
         <span class="author">${author}</span>
@@ -1052,9 +1082,10 @@ export class AgUiChatElement extends LitElement {
               </div>`
             : nothing}
         ${m.role === 'assistant' && m.complete && m.content
-          ? html`<div class="actions" part="actions">
+          ? html`<div class="actions" part="actions" ?data-voted=${vote !== null}>
               <button
                 type="button"
+                part="action action-copy"
                 data-action="copy"
                 data-state=${this._copiedId === m.id ? 'copied' : 'idle'}
                 title=${this._copiedId === m.id ? t.copied : t.copy}
@@ -1063,14 +1094,32 @@ export class AgUiChatElement extends LitElement {
               >
                 ${this._copiedId === m.id ? ICON_CHECK : ICON_COPY}
               </button>
-              <button type="button" data-action="helpful" title=${t.helpfulYes} aria-label=${t.helpfulYes} @click=${() => this._feedback(m, true)}>
+              <button
+                type="button"
+                part="action action-helpful"
+                data-action="helpful"
+                data-state=${vote === 'up' ? 'pressed' : 'idle'}
+                aria-pressed=${vote === 'up' ? 'true' : 'false'}
+                title=${t.helpfulYes}
+                aria-label=${t.helpfulYes}
+                @click=${() => this._feedback(m, true)}
+              >
                 ${ICON_THUMB_UP}
               </button>
-              <button type="button" data-action="not-helpful" title=${t.helpfulNo} aria-label=${t.helpfulNo} @click=${() => this._feedback(m, false)}>
+              <button
+                type="button"
+                part="action action-not-helpful"
+                data-action="not-helpful"
+                data-state=${vote === 'down' ? 'pressed' : 'idle'}
+                aria-pressed=${vote === 'down' ? 'true' : 'false'}
+                title=${t.helpfulNo}
+                aria-label=${t.helpfulNo}
+                @click=${() => this._feedback(m, false)}
+              >
                 ${ICON_THUMB_DOWN}
               </button>
               ${isLastAssistant && !chat.running
-                ? html`<button type="button" data-action="regenerate" title=${t.regenerate} aria-label=${t.regenerate} @click=${this.regenerate}>
+                ? html`<button type="button" part="action action-regenerate" data-action="regenerate" title=${t.regenerate} aria-label=${t.regenerate} @click=${this.regenerate}>
                     ${ICON_REFRESH}
                   </button>`
                 : nothing}

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2 (2026-10-23)
+
+- 新增：「有帮助 / 没帮助」按钮记录每条消息的投票状态：再次点击同一按钮撤销，点另一按钮切换；按下态渲染 `aria-pressed` 与 `data-state="pressed"`，并以强调色高亮，有投票时操作条常驻。
+- 新增：`AgUiChat#setFeedback(String, Boolean)` / `getFeedback(String)`（`null` 表示清除），用于重载后恢复历史投票；前端属性 `feedback`。
+- 新增：`agui-feedback` 事件增加 `value`（`'up'` / `'down'` / `null`），`FeedbackEvent` 新增 `getHelpful()` / `isCleared()`；`positive` 与 `isPositive()` 语义不变（被点击的按钮）。
+- 新增：消息操作按钮暴露 `part`：`action` 加 `action-copy` / `action-helpful` / `action-not-helpful` / `action-regenerate`。
+
 ## 0.2.1 (2026-10-22)
 
 - 新增：代码块动作按钮各自暴露 `part`（`code-action` 与 `code-action-copy` / `-insert` / `-replace`），带内置图标与悬停态。
