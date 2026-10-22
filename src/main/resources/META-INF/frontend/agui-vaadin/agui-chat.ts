@@ -182,6 +182,7 @@ export class AgUiChatElement extends LitElement {
     }
     .message[data-role='user'] .bubble {
       border-left: 0;
+      border: var(--agui-user-bubble-border, 0);
       background: var(--_user-bg);
       border-radius: var(--_radius) var(--_radius) 4px var(--_radius);
       padding: 0.55em 0.95em;
@@ -199,6 +200,9 @@ export class AgUiChatElement extends LitElement {
       margin: -0.25rem 0 0.5rem;
     }
     .code-actions button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3em;
       font: inherit;
       font-size: 0.75rem;
       padding: 0.125rem 0.5rem;
@@ -207,6 +211,16 @@ export class AgUiChatElement extends LitElement {
       background: transparent;
       color: inherit;
       cursor: pointer;
+      transition: background-color 120ms, border-color 120ms;
+    }
+    .code-actions button:hover {
+      background: var(--lumo-contrast-5pct, rgba(0, 0, 0, 0.05));
+      border-color: var(--lumo-contrast-30pct, #aaa);
+    }
+    .code-actions svg {
+      width: 1em;
+      height: 1em;
+      flex: none;
     }
     .bubble :is(p, ul, ol, pre, blockquote, table, h1, h2, h3, h4) {
       margin: 0.45em 0;
@@ -561,6 +575,10 @@ export class AgUiChatElement extends LitElement {
     .field:focus-within {
       border-color: var(--_accent);
       box-shadow: 0 0 0 3px var(--_accent-soft);
+    }
+    /* 外层 .field 已画聚焦环；textarea 不再叠加第二道矩形描边 */
+    .field textarea:focus-visible {
+      outline: none;
     }
     textarea {
       flex: 1 1 auto;
@@ -1027,9 +1045,9 @@ export class AgUiChatElement extends LitElement {
           : nothing}
         ${m.toolCalls?.map((c) => this._renderToolCall(c, t, chat))}
         ${m.role === 'user'
-          ? html`<div class="bubble" part="bubble">${m.content}</div>`
+          ? html`<div class="bubble" part="bubble user-bubble">${m.content}</div>`
           : m.content || streaming
-            ? html`<div class="bubble ${streaming ? 'streaming' : ''}" part="bubble">
+            ? html`<div class="bubble ${streaming ? 'streaming' : ''}" part="bubble assistant-bubble">
                 ${unsafeHTML(renderMarkdown(m.content))}
               </div>`
             : nothing}

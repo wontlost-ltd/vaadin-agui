@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (2026-10-22)
+
+- 新增：代码块动作按钮各自暴露 `part`（`code-action` 与 `code-action-copy` / `-insert` / `-replace`），带内置图标与悬停态。
+- 新增：用户 / 助手气泡分别暴露 `user-bubble` / `assistant-bubble` part；新 CSS 变量 `--agui-user-bubble-border`。
+- 修复：输入框聚焦时 textarea 不再在外层聚焦环内叠加第二道矩形描边。
+
 ## 0.2.0 (2026-10-20)
 
 - 新增：代码块动作工具栏（`AgUiChat#setCodeActions(AgUiCodeAction...)`，前端属性 `codeActions`），支持复制 / 插入 / 替换。
