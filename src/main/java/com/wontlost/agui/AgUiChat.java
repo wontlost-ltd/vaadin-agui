@@ -63,7 +63,7 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         // 客户端每次运行结束都会回传完整对话，服务端只保留镜像，不做二次归约
         addRunFinishedListener(e -> messages = e.getMessages());
         // 用户点击后同步镜像，避免重新挂载时用过期的属性值覆盖浏览器里的投票
-        addFeedbackListener(e -> putFeedback(e.getMessageId(), e.getHelpful()));
+        addFeedbackChangeListener(e -> putFeedback(e.getMessageId(), e.getHelpful()));
     }
 
     // ---- 连接与会话 ---------------------------------------------------
@@ -232,8 +232,14 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         return addListener(MessageSentEvent.class, listener);
     }
 
+    /** 只通知有效投票（含切换）；撤销投票不触发，需要时用 {@link #addFeedbackChangeListener}。 */
     public Registration addFeedbackListener(ComponentEventListener<FeedbackEvent> listener) {
         return addListener(FeedbackEvent.class, listener);
+    }
+
+    /** 投票、切换与撤销都会通知；只关心有效投票时用 {@link #addFeedbackListener}。 */
+    public Registration addFeedbackChangeListener(ComponentEventListener<FeedbackChangeEvent> listener) {
+        return addListener(FeedbackChangeEvent.class, listener);
     }
 
     public Registration addCodeActionListener(ComponentEventListener<CodeActionEvent> listener) {
@@ -387,51 +393,60 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
     }
 
     /**
-     * 用户点击「有帮助 / 没帮助」时触发。再次点击同一按钮会撤销投票，此时
-     * {@link #isCleared()} 为 {@code true}、{@link #getHelpful()} 为 {@code null}；
-     * {@link #isPositive()} 始终表示被点击的是哪个按钮。
+     * 用户投出「有帮助 / 没帮助」时触发，包括从一票切换到另一票；撤销投票不触发。
+     * 需要感知撤销的宿主请用 {@link #addFeedbackChangeListener}。
      */
-    @DomEvent("agui-feedback")
+    @DomEvent(value = "agui-feedback", filter = "event.detail.value != null")
     public static class FeedbackEvent extends ComponentEvent<AgUiChat> {
         private final String messageId;
         private final boolean positive;
-        private final String value;
-
-        /** 等价于一次未撤销的投票，保留给手动构造事件的既有调用方。 */
-        public FeedbackEvent(AgUiChat source, boolean fromClient, String messageId, boolean positive) {
-            this(source, fromClient, messageId, positive, positive ? "up" : "down");
-        }
 
         public FeedbackEvent(AgUiChat source, boolean fromClient,
                 @EventData("event.detail.messageId") String messageId,
-                @EventData("event.detail.positive") boolean positive,
-                @EventData("event.detail.value") String value) {
+                @EventData("event.detail.positive") boolean positive) {
             super(source, fromClient);
             this.messageId = messageId;
             this.positive = positive;
-            this.value = value;
         }
 
         public String getMessageId() {
             return messageId;
         }
 
-        /** 被点击的按钮：{@code true} 为「有帮助」，{@code false} 为「没帮助」。 */
         public boolean isPositive() {
             return positive;
         }
+    }
 
-        /** 点击后的投票状态：{@code TRUE} 有帮助，{@code FALSE} 没帮助，{@code null} 已撤销。 */
-        public Boolean getHelpful() {
-            if ("up".equals(value)) {
-                return Boolean.TRUE;
-            }
-            return "down".equals(value) ? Boolean.FALSE : null;
+    /** 某条消息的反馈投票发生任何变化时触发：投票、切换或撤销。 */
+    @DomEvent("agui-feedback")
+    public static class FeedbackChangeEvent extends ComponentEvent<AgUiChat> {
+        private final String messageId;
+        private final Boolean helpful;
+
+        public FeedbackChangeEvent(AgUiChat source, boolean fromClient,
+                @EventData("event.detail.messageId") String messageId,
+                @EventData("event.detail.value") String value) {
+            this(source, fromClient, messageId, value == null ? null : "up".equals(value));
         }
 
-        /** 本次点击是否撤销了之前的投票。 */
+        public FeedbackChangeEvent(AgUiChat source, boolean fromClient, String messageId, Boolean helpful) {
+            super(source, fromClient);
+            this.messageId = messageId;
+            this.helpful = helpful;
+        }
+
+        public String getMessageId() {
+            return messageId;
+        }
+
+        /** 变化后的投票：{@code TRUE} 有帮助，{@code FALSE} 没帮助，{@code null} 已撤销。 */
+        public Boolean getHelpful() {
+            return helpful;
+        }
+
         public boolean isCleared() {
-            return getHelpful() == null;
+            return helpful == null;
         }
     }
 

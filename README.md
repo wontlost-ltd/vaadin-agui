@@ -94,8 +94,10 @@ That is the whole integration. No `@Push`, no feature flag, no orchestrator.
 | `setFeedback(messageId, helpful)` | restore a helpful (`true`) / not helpful (`false`) vote; `null` clears it |
 
 Events: `RunStarted`, `RunFinished` (with the conversation snapshot and a `cancelled` flag),
-`RunError`, `ToolCall`, `StateChanged`, `MessageSent`, `Feedback` (`isPositive()` is the button
-clicked; `getHelpful()` is the vote after the click, `null` when clicking the same button again cleared it).
+`RunError`, `ToolCall`, `StateChanged`, `MessageSent`, `Feedback`, `FeedbackChange`.
+Clicking the same thumb again clears the vote. `Feedback` fires only for actual votes (including a switch
+from one thumb to the other; `isPositive()` is the thumb clicked) and not for a clear. `FeedbackChange`
+fires for every change, with `getHelpful()` = `true` / `false` / `null` (cleared).
 
 ## Frontend tools: the UI as a tool
 

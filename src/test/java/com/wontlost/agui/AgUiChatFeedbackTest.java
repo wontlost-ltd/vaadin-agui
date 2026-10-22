@@ -5,20 +5,35 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.vaadin.flow.component.ComponentEventBusUtil;
-import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.dom.DomEvent;
+import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
+
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 class AgUiChatFeedbackTest {
+
+    private static final String LEGACY_FILTER = "event.detail.value != null";
 
     private static String feedbackJson(AgUiChat chat) {
         Object raw = chat.getElement().getPropertyRaw("feedback");
         return raw == null ? "" : raw.toString();
+    }
+
+    /** 按浏览器的方式投递 agui-feedback：过滤表达式的结果由客户端算好随事件数据回传。 */
+    private static void clientFeedback(AgUiChat chat, String messageId, boolean positive, String value) {
+        ObjectNode data = JsonMapper.shared().createObjectNode();
+        data.put("event.detail.messageId", messageId);
+        data.put("event.detail.positive", positive);
+        data.put("event.detail.value", value);
+        data.put(LEGACY_FILTER, value != null);
+        chat.getElement().getNode().getFeature(ElementListenerMap.class)
+                .fireEvent(new DomEvent(chat.getElement(), "agui-feedback", data));
     }
 
     @Test
@@ -52,42 +67,54 @@ class AgUiChatFeedbackTest {
     }
 
     @Test
-    void feedbackEventCarriesNewValue() {
+    void legacyListenerIsNotCalledOnClear() {
         AgUiChat chat = new AgUiChat("/agui/x");
-        List<AgUiChat.FeedbackEvent> seen = new ArrayList<>();
-        chat.addFeedbackListener(seen::add);
+        List<AgUiChat.FeedbackEvent> votes = new ArrayList<>();
+        chat.addFeedbackListener(votes::add);
 
-        ComponentUtil.fireEvent(chat, new AgUiChat.FeedbackEvent(chat, true, "m-1", false, "down"));
-        AgUiChat.FeedbackEvent down = seen.get(0);
-        assertEquals("m-1", down.getMessageId());
-        assertFalse(down.isPositive());
-        assertEquals(Boolean.FALSE, down.getHelpful());
-        assertFalse(down.isCleared());
-        assertEquals(Boolean.FALSE, chat.getFeedback("m-1"));
+        clientFeedback(chat, "m-1", true, "up");
+        clientFeedback(chat, "m-1", true, null);
 
-        // 再点一次同一按钮：撤销
-        ComponentUtil.fireEvent(chat, new AgUiChat.FeedbackEvent(chat, true, "m-1", false, null));
-        AgUiChat.FeedbackEvent cleared = seen.get(1);
-        assertFalse(cleared.isPositive());
+        assertEquals(1, votes.size());
+        assertTrue(votes.get(0).isPositive());
+    }
+
+    @Test
+    void changeListenerReceivesNullOnClearAndMapIsPruned() {
+        AgUiChat chat = new AgUiChat("/agui/x");
+        List<AgUiChat.FeedbackChangeEvent> changes = new ArrayList<>();
+        chat.addFeedbackChangeListener(changes::add);
+
+        clientFeedback(chat, "m-1", true, "up");
+        assertEquals(Boolean.TRUE, chat.getFeedback("m-1"));
+        clientFeedback(chat, "m-1", true, null);
+
+        assertEquals(2, changes.size());
+        assertEquals(Boolean.TRUE, changes.get(0).getHelpful());
+        AgUiChat.FeedbackChangeEvent cleared = changes.get(1);
+        assertEquals("m-1", cleared.getMessageId());
         assertNull(cleared.getHelpful());
         assertTrue(cleared.isCleared());
         assertNull(chat.getFeedback("m-1"));
+        assertFalse(feedbackJson(chat).contains("m-1"), feedbackJson(chat));
     }
 
     @Test
-    void legacyConstructorMeansVoteNotCleared() {
+    void switchingUpToDownCallsLegacyListenerWithFalse() {
         AgUiChat chat = new AgUiChat("/agui/x");
-        AgUiChat.FeedbackEvent e = new AgUiChat.FeedbackEvent(chat, true, "m-1", true);
-        assertTrue(e.isPositive());
-        assertEquals(Boolean.TRUE, e.getHelpful());
-        assertFalse(e.isCleared());
-    }
+        List<AgUiChat.FeedbackEvent> votes = new ArrayList<>();
+        List<AgUiChat.FeedbackChangeEvent> changes = new ArrayList<>();
+        chat.addFeedbackListener(votes::add);
+        chat.addFeedbackChangeListener(changes::add);
 
-    @Test
-    void domEventBindsValueFromDetail() {
-        Constructor<AgUiChat.FeedbackEvent> ctor = ComponentEventBusUtil.getEventConstructor(AgUiChat.FeedbackEvent.class);
-        assertEquals(5, ctor.getParameterCount());
-        assertEquals(List.of("event.detail.messageId", "event.detail.positive", "event.detail.value"),
-                List.copyOf(ComponentEventBusUtil.getEventDataExpressions(AgUiChat.FeedbackEvent.class).keySet()));
+        clientFeedback(chat, "m-1", true, "up");
+        clientFeedback(chat, "m-1", false, "down");
+
+        assertEquals(2, votes.size());
+        assertTrue(votes.get(0).isPositive());
+        assertFalse(votes.get(1).isPositive());
+        assertEquals("m-1", votes.get(1).getMessageId());
+        assertEquals(Boolean.FALSE, changes.get(1).getHelpful());
+        assertEquals(Boolean.FALSE, chat.getFeedback("m-1"));
     }
 }
