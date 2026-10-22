@@ -139,11 +139,12 @@ agui-chat {
   --agui-user-bubble-background: var(--lumo-primary-color-10pct);
   --agui-assistant-bubble-background: transparent;
   --agui-bubble-radius: 0.5rem;
+  --agui-user-bubble-border: 1px solid var(--lumo-primary-color-50pct);
 }
 ```
 
 Variants: `chat.addThemeVariants(AgUiChatVariant.COMPACT, AgUiChatVariant.FLAT)`.
-Parts: `messages`, `message`, `bubble`, `tool-call`, `thinking`, `actions`, `composer`, `suggestions`, `error`.
+Parts: `messages`, `message`, `bubble` (plus `user-bubble` / `assistant-bubble`), `tool-call`, `thinking`, `actions`, `composer`, `suggestions`, `error`, `code-actions`, `code-action` (plus `code-action-copy` / `code-action-insert` / `code-action-replace`).
 
 ## Configuration
 

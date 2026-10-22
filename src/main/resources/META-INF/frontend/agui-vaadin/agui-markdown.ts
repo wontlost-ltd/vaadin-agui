@@ -64,12 +64,24 @@ export function decorateCodeBlocks(
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.dataset.codeAction = action;
-      btn.textContent = labels[action];
+      // 每个按钮单独暴露 part，宿主可用 ::part(code-action-copy) 等精确定制
+      btn.setAttribute('part', `code-action code-action-${action}`);
+      btn.innerHTML = CODE_ACTION_ICONS[action];
+      const label = document.createElement('span');
+      label.textContent = labels[action];
+      btn.appendChild(label);
       bar.appendChild(btn);
     }
     pre.insertAdjacentElement('afterend', bar);
   });
 }
+
+/** 代码块动作的内置图标（静态可信 SVG，不含用户内容）。 */
+const CODE_ACTION_ICONS: Record<CodeAction, string> = {
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+  insert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  replace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>',
+};
 
 /** 从 <pre><code class="language-x"> 取语言名。 */
 export function codeLanguage(pre: HTMLPreElement): string {
