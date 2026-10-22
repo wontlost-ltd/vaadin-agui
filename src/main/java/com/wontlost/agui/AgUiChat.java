@@ -1,6 +1,7 @@
 package com.wontlost.agui;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +53,8 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
     };
 
     private List<Message> messages = List.of();
+    /** 服务端镜像的反馈投票（消息 id → 是否有帮助），与前端 feedback 属性保持一致。 */
+    private final Map<String, Boolean> feedback = new LinkedHashMap<>();
 
     public AgUiChat(String agentUrl) {
         setAgentUrl(agentUrl);
@@ -59,6 +62,8 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         setI18n(new AgUiChatI18n());
         // 客户端每次运行结束都会回传完整对话，服务端只保留镜像，不做二次归约
         addRunFinishedListener(e -> messages = e.getMessages());
+        // 用户点击后同步镜像，避免重新挂载时用过期的属性值覆盖浏览器里的投票
+        addFeedbackChangeListener(e -> putFeedback(e.getMessageId(), e.getHelpful()));
     }
 
     // ---- 连接与会话 ---------------------------------------------------
@@ -132,6 +137,32 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
                 Arrays.stream(actions).map(AgUiCodeAction::getValue).toList());
     }
 
+    /**
+     * 设置某条助手消息上的反馈投票，例如页面重载后恢复用户之前的选择。
+     *
+     * @param messageId 消息 id
+     * @param helpful   {@code true} 有帮助，{@code false} 没帮助，{@code null} 清除投票
+     */
+    public void setFeedback(String messageId, Boolean helpful) {
+        putFeedback(Objects.requireNonNull(messageId, "messageId"), helpful);
+    }
+
+    /** 返回某条消息当前的反馈投票；未投票时为 {@code null}。 */
+    public Boolean getFeedback(String messageId) {
+        return feedback.get(messageId);
+    }
+
+    private void putFeedback(String messageId, Boolean helpful) {
+        if (helpful == null) {
+            feedback.remove(messageId);
+        } else {
+            feedback.put(messageId, helpful);
+        }
+        Map<String, String> wire = new LinkedHashMap<>();
+        feedback.forEach((id, up) -> wire.put(id, up ? "up" : "down"));
+        getElement().setPropertyMap("feedback", wire);
+    }
+
     public void setI18n(AgUiChatI18n i18n) {
         getElement().setPropertyBean("i18n", Objects.requireNonNull(i18n, "i18n"));
     }
@@ -165,6 +196,8 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
     public void clear() {
         setThreadId(UUID.randomUUID().toString());
         messages = List.of();
+        feedback.clear();
+        getElement().setPropertyMap("feedback", Map.of());
         getElement().callJsFunction("clear");
     }
 
@@ -199,8 +232,14 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         return addListener(MessageSentEvent.class, listener);
     }
 
+    /** 只通知有效投票（含切换）；撤销投票不触发，需要时用 {@link #addFeedbackChangeListener}。 */
     public Registration addFeedbackListener(ComponentEventListener<FeedbackEvent> listener) {
         return addListener(FeedbackEvent.class, listener);
+    }
+
+    /** 投票、切换与撤销都会通知；只关心有效投票时用 {@link #addFeedbackListener}。 */
+    public Registration addFeedbackChangeListener(ComponentEventListener<FeedbackChangeEvent> listener) {
+        return addListener(FeedbackChangeEvent.class, listener);
     }
 
     public Registration addCodeActionListener(ComponentEventListener<CodeActionEvent> listener) {
@@ -353,7 +392,11 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
         }
     }
 
-    @DomEvent("agui-feedback")
+    /**
+     * 用户投出「有帮助 / 没帮助」时触发，包括从一票切换到另一票；撤销投票不触发。
+     * 需要感知撤销的宿主请用 {@link #addFeedbackChangeListener}。
+     */
+    @DomEvent(value = "agui-feedback", filter = "event.detail.value != null")
     public static class FeedbackEvent extends ComponentEvent<AgUiChat> {
         private final String messageId;
         private final boolean positive;
@@ -372,6 +415,38 @@ public class AgUiChat extends Component implements HasSize, HasStyle, HasTheme, 
 
         public boolean isPositive() {
             return positive;
+        }
+    }
+
+    /** 某条消息的反馈投票发生任何变化时触发：投票、切换或撤销。 */
+    @DomEvent("agui-feedback")
+    public static class FeedbackChangeEvent extends ComponentEvent<AgUiChat> {
+        private final String messageId;
+        private final Boolean helpful;
+
+        public FeedbackChangeEvent(AgUiChat source, boolean fromClient,
+                @EventData("event.detail.messageId") String messageId,
+                @EventData("event.detail.value") String value) {
+            this(source, fromClient, messageId, value == null ? null : "up".equals(value));
+        }
+
+        public FeedbackChangeEvent(AgUiChat source, boolean fromClient, String messageId, Boolean helpful) {
+            super(source, fromClient);
+            this.messageId = messageId;
+            this.helpful = helpful;
+        }
+
+        public String getMessageId() {
+            return messageId;
+        }
+
+        /** 变化后的投票：{@code TRUE} 有帮助，{@code FALSE} 没帮助，{@code null} 已撤销。 */
+        public Boolean getHelpful() {
+            return helpful;
+        }
+
+        public boolean isCleared() {
+            return helpful == null;
         }
     }
 

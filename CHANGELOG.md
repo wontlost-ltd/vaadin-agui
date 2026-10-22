@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.2 (2026-10-23)
+
+- 新增：「有帮助 / 没帮助」按钮记录每条消息的投票状态：再次点击同一按钮撤销，点另一按钮切换；按下态渲染 `aria-pressed` 与 `data-state="pressed"`，并以强调色高亮，有投票时操作条常驻。
+- 新增：`AgUiChat#setFeedback(String, Boolean)` / `getFeedback(String)`（`null` 表示清除），用于重载后恢复历史投票；前端属性 `feedback`。
+- 新增：`agui-feedback` 事件增加 `value`（`'up'` / `'down'` / `null`）；`positive` 语义不变（被点击的按钮）。
+- 新增：`AgUiChat#addFeedbackChangeListener` 与 `FeedbackChangeEvent`（`getHelpful()`：`TRUE` / `FALSE` / `null` 表示撤销，`isCleared()`），投票、切换、撤销都会通知。
+- 新增：消息操作按钮暴露 `part`：`action` 加 `action-copy` / `action-helpful` / `action-not-helpful` / `action-regenerate`。
+
+### 行为变更
+
+- 同一按钮再点一次即撤销投票（此前每次点击都是一次新投票）。既有的 `addFeedbackListener` / `FeedbackEvent` 只在有效投票（含从一票切换到另一票，此时 `isPositive()` 为新按钮）时触发，撤销时**不触发**，因此按旧语义记账的监听方（如审计）不会把撤销误记为又一票；需要感知撤销请改用 `addFeedbackChangeListener`。
+- 撤销后服务端镜像中该消息的条目被移除，`getFeedback(id)` 返回 `null`。
+
 ## 0.2.1 (2026-10-22)
 
 - 新增：代码块动作按钮各自暴露 `part`（`code-action` 与 `code-action-copy` / `-insert` / `-replace`），带内置图标与悬停态。

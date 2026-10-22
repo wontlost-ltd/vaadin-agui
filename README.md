@@ -91,9 +91,13 @@ That is the whole integration. No `@Push`, no feature flag, no orchestrator.
 | `submitToolResult(id, json)` | answer a frontend tool call; the component re-runs automatically |
 | `setContext(list)` | per-run ambient context (tenant, locale, page state) |
 | `setRequestHeaders(map)` | extra headers for the SSE request, e.g. a bearer token |
+| `setFeedback(messageId, helpful)` | restore a helpful (`true`) / not helpful (`false`) vote; `null` clears it |
 
 Events: `RunStarted`, `RunFinished` (with the conversation snapshot and a `cancelled` flag),
-`RunError`, `ToolCall`, `StateChanged`, `MessageSent`, `Feedback`.
+`RunError`, `ToolCall`, `StateChanged`, `MessageSent`, `Feedback`, `FeedbackChange`.
+Clicking the same thumb again clears the vote. `Feedback` fires only for actual votes (including a switch
+from one thumb to the other; `isPositive()` is the thumb clicked) and not for a clear. `FeedbackChange`
+fires for every change, with `getHelpful()` = `true` / `false` / `null` (cleared).
 
 ## Frontend tools: the UI as a tool
 
@@ -144,7 +148,7 @@ agui-chat {
 ```
 
 Variants: `chat.addThemeVariants(AgUiChatVariant.COMPACT, AgUiChatVariant.FLAT)`.
-Parts: `messages`, `message`, `bubble` (plus `user-bubble` / `assistant-bubble`), `tool-call`, `thinking`, `actions`, `composer`, `suggestions`, `error`, `code-actions`, `code-action` (plus `code-action-copy` / `code-action-insert` / `code-action-replace`).
+Parts: `messages`, `message`, `bubble` (plus `user-bubble` / `assistant-bubble`), `tool-call`, `thinking`, `actions`, `action` (plus `action-copy` / `action-helpful` / `action-not-helpful` / `action-regenerate`), `composer`, `suggestions`, `error`, `code-actions`, `code-action` (plus `code-action-copy` / `code-action-insert` / `code-action-replace`).
 
 ## Configuration
 

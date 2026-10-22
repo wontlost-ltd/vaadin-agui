@@ -85,6 +85,9 @@ export type AgUiEvent =
 
 export type ToolStatus = 'streaming' | 'called' | 'done';
 
+/** 单条助手消息上的反馈投票：'up' 有帮助，'down' 没帮助；未投票时不出现在映射里。 */
+export type FeedbackValue = 'up' | 'down';
+
 export interface ChatState {
   messages: UiMessage[];
   running: boolean;
